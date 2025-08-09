@@ -1,79 +1,82 @@
-<!doctype html>
-<html lang="id">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Kamikz — Demo TopUp QRIS</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login/Signup Form</title>
+    <link rel="stylesheet" href="SignUp_LogIn_Form.css">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 </head>
-<body>
-  <div id="app" class="container">
-    <header class="topbar">
-      <div class="brand">
-        <div class="logo">KZ</div>
-        <div>
-          <div id="greet" class="greet">Hai, Pengguna</div>
-          <div id="trxCount" class="muted">0 Trx</div>
-        </div>
-      </div>
-      <div class="profile-area">
-        <div id="balanceLabel" class="small-muted">Saldo</div>
-        <div id="balance" class="balance">Rp 0</div>
-        <img id="hdrAvatar" class="avatar" src="" alt="avatar" title="Buka Profil">
-      </div>
-    </header>
+  <body>
 
-    <main>
-      <section class="card balance-card">
-        <div class="balance-top">
-          <div>
-            <div class="small-muted">Saldo Anda</div>
-            <div id="saldoMain" class="saldo-amount">Rp 0</div>
+    <!-- credits to the writter @leonam-silva-de-souza -->
+      <div class="container">
+          <div class="form-box login">
+              <form action="#">
+                  <h1>Login</h1>
+                  <div class="input-box">
+                      <input type="text" placeholder="Username" required>
+                      <i class='bx bxs-user'></i>
+                  </div>
+                  <div class="input-box">
+                      <input type="password" placeholder="Password" required>
+                      <i class='bx bxs-lock-alt' ></i>
+                  </div>
+                  <div class="forgot-link">
+                      <a href="#">Forgot Password?</a>
+                  </div>
+                  <button type="submit" class="btn">Login</button>
+                  <p>or login with social platforms</p>
+                  <div class="social-icons">
+                      <a href="#"><i class='bx bxl-google' ></i></a>
+                      <a href="#"><i class='bx bxl-facebook' ></i></a>
+                      <a href="#"><i class='bx bxl-github' ></i></a>
+                      <a href="#"><i class='bx bxl-linkedin' ></i></a>
+                  </div>
+              </form>
           </div>
-          <div class="balance-actions">
-            <button id="btnTopUp" class="btn primary">Isi Saldo</button>
-            <button id="refreshBtn" class="btn ghost">Refresh</button>
+
+          <div class="form-box register">
+              <form action="#">
+                  <h1>Registration</h1>
+                  <div class="input-box">
+                      <input type="text" placeholder="Username" required>
+                      <i class='bx bxs-user'></i>
+                  </div>
+                  <div class="input-box">
+                      <input type="email" placeholder="Email" required>
+                      <i class='bx bxs-envelope' ></i>
+                  </div>
+                  <div class="input-box">
+                      <input type="password" placeholder="Password" required>
+                      <i class='bx bxs-lock-alt' ></i>
+                  </div>
+                  <button type="submit" class="btn">Register</button>
+                  <p>or register with social platforms</p>
+                  <div class="social-icons">
+                      <a href="#"><i class='bx bxl-google' ></i></a>
+                      <a href="#"><i class='bx bxl-facebook' ></i></a>
+                      <a href="#"><i class='bx bxl-github' ></i></a>
+                      <a href="#"><i class='bx bxl-linkedin' ></i></a>
+                  </div>
+              </form>
           </div>
-        </div>
 
-        <div class="quick-actions">
-          <div class="qa" id="qaTopUp"><div class="qa-ico">＋</div><div class="qa-label">Isi Saldo</div></div>
-          <div class="qa" id="qaTransfer"><div class="qa-ico">⇄</div><div class="qa-label">Transfer</div></div>
-          <div class="qa" id="qaMutasi"><div class="qa-ico">≡</div><div class="qa-label">Mutasi</div></div>
-          <div class="qa" id="qaProfile"><div class="qa-ico">👤</div><div class="qa-label">Profil</div></div>
-        </div>
-      </section>
+          <div class="toggle-box">
+              <div class="toggle-panel toggle-left">
+                  <h1>Hello, Welcome!</h1>
+                  <p>Don't have an account?</p>
+                  <button class="btn register-btn">Register</button>
+              </div>
 
-      <section class="card">
-        <h3>Isi Ulang</h3>
-        <div class="menu-grid">
-          <div class="menu-item">Internet</div>
-          <div class="menu-item">Pulsa Reguler</div>
-          <div class="menu-item">Token PLN</div>
-          <div class="menu-item">Digital</div>
-          <div class="menu-item">E-Wallet</div>
-          <div class="menu-item">Tagihan</div>
-          <div class="menu-item">Pulsa Transfer</div>
-          <div class="menu-item">Lainnya</div>
-        </div>
-      </section>
+              <div class="toggle-panel toggle-right">
+                  <h1>Welcome Back!</h1>
+                  <p>Already have an account?</p>
+                  <button class="btn login-btn">Login</button>
+              </div>
+          </div>
+      </div>
 
-      <section class="card">
-        <h3>Riwayat Terbaru</h3>
-        <div id="recentList" class="recent-list">
-          <div class="empty">Belum ada transaksi</div>
-        </div>
-      </section>
-    </main>
-  </div>
-
-  <!-- Modal wrapper -->
-  <div id="modalWrap" class="modal-wrap" aria-hidden="true">
-    <div id="modal" class="modal" role="dialog" aria-modal="true">
-      <div id="modalContent"></div>
-    </div>
-  </div>
-
-  <script src="script.js"></script>
-</body>
+      <script src="SignUp_LogIn_Form.js"></script>
+  </body>
 </html>
