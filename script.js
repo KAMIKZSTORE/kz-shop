@@ -1,27 +1,8 @@
-// ===== LOGIN PAGE =====
+// Efek partikel hologram di halaman login
 if (document.getElementById('loginForm')) {
-  document.getElementById('loginForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    const resp = await fetch('auth.php', { method: 'POST', body: formData });
-    const data = await resp.json();
-    const msg = document.getElementById('msg');
-    if (data.success) {
-      sessionStorage.setItem('loggedIn', 'true');
-      msg.style.color = 'lime';
-      msg.textContent = 'Login berhasil! Mengalihkan...';
-      setTimeout(() => window.location.href = 'index.html', 1500);
-    } else {
-      msg.style.color = 'red';
-      msg.textContent = data.error || 'Login gagal';
-    }
-  });
-
-  // ==== Efek Partikel + Laser ====
   const canvas = document.getElementById('holoCanvas');
   const ctx = canvas.getContext('2d');
   let particles = [];
-  let lasers = [];
 
   function resizeCanvas() {
     canvas.width = window.innerWidth;
@@ -30,7 +11,6 @@ if (document.getElementById('loginForm')) {
   window.addEventListener('resize', resizeCanvas);
   resizeCanvas();
 
-  // Partikel
   for (let i = 0; i < 80; i++) {
     particles.push({
       x: Math.random() * canvas.width,
@@ -42,21 +22,8 @@ if (document.getElementById('loginForm')) {
     });
   }
 
-  // Laser
-  for (let i = 0; i < 10; i++) {
-    lasers.push({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      length: Math.random() * 200 + 100,
-      speed: (Math.random() - 0.5) * 2,
-      color: 'rgba(0,255,255,0.5)'
-    });
-  }
-
-  function animate() {
+  function animateParticles() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Partikel
     particles.forEach(p => {
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
@@ -71,38 +38,13 @@ if (document.getElementById('loginForm')) {
       if (p.x < 0 || p.x > canvas.width) p.dx *= -1;
       if (p.y < 0 || p.y > canvas.height) p.dy *= -1;
     });
-
-    // Laser
-    lasers.forEach(l => {
-      ctx.beginPath();
-      ctx.moveTo(l.x, l.y);
-      ctx.lineTo(l.x + l.length, l.y);
-      ctx.strokeStyle = l.color;
-      ctx.shadowBlur = 20;
-      ctx.shadowColor = 'cyan';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      l.y += l.speed;
-      if (l.y < 0) l.y = canvas.height;
-      if (l.y > canvas.height) l.y = 0;
-    });
-
-    requestAnimationFrame(animate);
+    requestAnimationFrame(animateParticles);
   }
-  animate();
+  animateParticles();
 }
 
-// ===== CHAT PAGE =====
+// Fungsi chat di halaman index.html
 if (document.getElementById('sendBtn')) {
-  if (!sessionStorage.getItem('loggedIn')) {
-    window.location.href = 'login.html';
-  }
-  document.getElementById('logoutBtn').onclick = () => {
-    sessionStorage.removeItem('loggedIn');
-    window.location.href = 'login.html';
-  };
-
   document.getElementById('sendBtn').addEventListener('click', async () => {
     const input = document.getElementById('userInput').value.trim();
     if (!input) return;
@@ -110,6 +52,7 @@ if (document.getElementById('sendBtn')) {
     chatOutput.innerHTML += `<p><b>Kamu:</b> ${input}</p>`;
     document.getElementById('userInput').value = '';
 
+    // Panggil ai.php (kamu harus isi API key di sana)
     const resp = await fetch('ai.php', {
       method: 'POST',
       body: new URLSearchParams({ prompt: input })
