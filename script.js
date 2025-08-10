@@ -1,6 +1,13 @@
+javascript
 /* ---------------------------
    App: Kamikz demo single-file
    --------------------------- */
+
+/* Initialize EmailJS */
+(function() {
+  emailjs.init('YOUR_EMAILJS_PUBLIC_KEY'); // Replace with your public key
+  console.log('EmailJS initialized');
+})();
 
 /* utilities & storage */
 const LS_USERS = 'kamikz.users.v6';
@@ -15,51 +22,89 @@ function loadUsers(){ try{ return JSON.parse(localStorage.getItem(LS_USERS) || '
 function saveUsers(u){ localStorage.setItem(LS_USERS, JSON.stringify(u||{})); }
 function setCurrent(email){ localStorage.setItem(LS_CURRENT, email||''); }
 function getCurrent(){ return localStorage.getItem(LS_CURRENT) || ''; }
-function toast(msg, t=1400){ const el=document.createElement('div'); el.className='toast'; el.textContent=msg; document.body.appendChild(el); setTimeout(()=> el.style.opacity='0', t-200); setTimeout(()=> el.remove(), t); }
-
-/* EmailJS implementation */
-async function sendEmail(to, subject, body) {
-  try {
-    showLoading(); // Show loading indicator
-    
-    // Prepare email parameters
-    const templateParams = {
-      to_email: to,
-      from_name: "Admin Kamikz",
-      from_email: "andikadarmawangsa640@gmail.com",
-      subject: subject,
-      message: body
-    };
-
-    // Send email using EmailJS
-    await emailjs.send(
-      'service_faxghxt', // Replace with your EmailJS service ID
-      'template_rl1f4xs', // Replace with your EmailJS template ID
-      templateParams
-    );
-    
-    hideLoading(); // Hide loading indicator
-    toast(`Email OTP dikirim ke ${to}`);
-    return true;
-  } catch (error) {
-    hideLoading();
-    console.error('Email sending failed:', error);
-    toast('Gagal mengirim OTP. Silakan coba lagi.');
-    return false;
-  }
+function toast(msg, t=1400){ 
+  const el = document.createElement('div'); 
+  el.className = 'toast'; 
+  el.textContent = msg; 
+  document.body.appendChild(el); 
+  setTimeout(()=> el.style.opacity = '0', t-200); 
+  setTimeout(()=> el.remove(), t); 
 }
+
+/* DOM elements */
+const loginPage = $('loginPage');
+const app = $('app');
+const loginBtn = $('loginBtn');
+const logoutBtn = $('logoutBtn');
 
 /* app state */
 let users = loadUsers();
 let current = getCurrent();
 let me = current && users[current] ? users[current] : null;
 
+/* EmailJS implementation */
+async function sendEmail(to, subject, body) {
+  try {
+    showLoading();
+    console.log('Attempting to send email to:', to);
+    
+    const templateParams = {
+      to_email: to,
+      from_name: "Admin Kamikz",
+      from_email: "andikadarmawangsa640@gmail.com",
+      reply_to: "andikadarmawangsa640@gmail.com",
+      subject: subject,
+      message: body
+    };
+
+    const response = await emailjs.send(
+      'YOUR_EMAILJS_SERVICE_ID', // Replace with Service ID
+      'YOUR_EMAILJS_TEMPLATE_ID', // Replace with Template ID
+      templateParams
+    );
+    
+    console.log('Email sent successfully:', response);
+    hideLoading();
+    toast(`Email OTP dikirim ke ${to}`);
+    return true;
+  } catch (error) {
+    console.error('Email sending failed:', error);
+    hideLoading();
+    toast(`Gagal mengirim OTP: ${error.status || 'Unknown error'}`);
+    return false;
+  }
+}
+
+/* Login/Logout functions */
+function showLoginPage() {
+  loginPage.style.display = 'flex';
+  app.style.display = 'none';
+}
+
+function hideLoginPage() {
+  loginPage.style.display = 'none';
+  app.style.display = 'block';
+}
+
 /* seed admin if missing */
 (function seed(){
   if(!users['admin@dev.co']){
     users['admin@dev.co'] = {
-      name:'admin', email:'admin@dev.co', gmail:'admin@gmail.com', role:'admin', photo:'', phone:'', phoneVerified:true,
-      saldo:500000, history:[{id:uid(),dateISO:new Date().toISOString(),type:'topup',note:'Saldo awal (admin)',amount:500000}],
+      name:'admin', 
+      email:'admin@dev.co', 
+      gmail:'admin@gmail.com', 
+      role:'admin', 
+      photo:'', 
+      phone:'', 
+      phoneVerified:true,
+      saldo:500000, 
+      history:[{
+        id:uid(),
+        dateISO:new Date().toISOString(),
+        type:'topup',
+        note:'Saldo awal (admin)',
+        amount:500000
+      }],
       security:{pin:'1234', a2f:false}
     };
     saveUsers(users);
@@ -73,14 +118,18 @@ function showModal(html){
   modalWrap.style.display = 'flex';
   modalWrap.setAttribute('aria-hidden','false');
 }
-function closeModal(){ modalWrap.style.display='none'; modalWrap.setAttribute('aria-hidden','true'); modalContent.innerHTML=''; }
+function closeModal(){ 
+  modalWrap.style.display='none'; 
+  modalWrap.setAttribute('aria-hidden','true'); 
+  modalContent.innerHTML=''; 
+}
 
 /* close modal when click outside */
 modalWrap.addEventListener('click', (e)=> {
   if(e.target === modalWrap) closeModal();
 });
 
-/* --- LOADING HELPERS (DITAMBAHKAN) --- */
+/* loading helpers */
 function showLoading() {
   const el = $('loadingScreen');
   if(!el) return;
@@ -93,7 +142,6 @@ function hideLoading() {
   el.style.display = 'none';
   el.setAttribute('aria-hidden','true');
 }
-/* helper to run an async-like simulated action with loader */
 function withLoading(fn, delay=900){
   showLoading();
   return setTimeout(()=> {
@@ -103,11 +151,63 @@ function withLoading(fn, delay=900){
 
 /* initial UI bindings */
 document.addEventListener('DOMContentLoaded', ()=> {
-  users = loadUsers(); current = getCurrent();
-  if(!current || !users[current]) askLogin();
-  else renderApp();
+  users = loadUsers(); 
+  current = getCurrent();
+  
+  if(!current || !users[current]) {
+    showLoginPage();
+  } else {
+    hideLoginPage();
+    renderApp();
+  }
 
-  // handlers (elements exist in DOM)
+  // Modern login handler
+  loginBtn.addEventListener('click', () => {
+    const email = $('loginEmail').value.trim().toLowerCase();
+    const gmail = $('loginGmail').value.trim().toLowerCase();
+    const name = $('loginName').value.trim();
+    
+    if(!email || !name) {
+      toast('Email dan nama wajib diisi');
+      return;
+    }
+    
+    withLoading(() => {
+      if(!users[email]) {
+        users[email] = { 
+          name, 
+          email, 
+          gmail,
+          role: 'user',
+          photo: '', 
+          phone: '', 
+          phoneVerified: false, 
+          saldo: 0, 
+          history: [], 
+          security: {pin: '', a2f: false} 
+        };
+        saveUsers(users);
+      }
+      
+      current = email; 
+      setCurrent(email); 
+      me = users[email];
+      hideLoginPage(); 
+      renderApp(); 
+      toast('Selamat datang, ' + me.name);
+    }, 900);
+  });
+
+  // Logout functionality
+  logoutBtn.addEventListener('click', () => {
+    withLoading(() => {
+      setCurrent('');
+      showLoginPage();
+      toast('Anda telah logout');
+    }, 500);
+  });
+
+  // Rest of your existing event listeners
   $('btnTopUp').addEventListener('click', showTopUpModal);
   $('qaTopUp').addEventListener('click', ()=> $('btnTopUp').click());
   $('qaTransfer').addEventListener('click', showTransferModal);
@@ -115,10 +215,10 @@ document.addEventListener('DOMContentLoaded', ()=> {
   $('qaProfile').addEventListener('click', openProfile);
   $('hdrAvatar').addEventListener('click', openProfile);
 
-  // Refresh button: show loader while reloading users
+  // Refresh button
   $('refreshBtn').addEventListener('click', ()=> {
     withLoading(()=> {
-       users = loadUsers();
+      users = loadUsers();
       me = users[current];
       updateBalance();
       toast('Saldo diperbarui');
@@ -126,73 +226,17 @@ document.addEventListener('DOMContentLoaded', ()=> {
   });
 });
 
-/* login / register */
-function askLogin(){
-  showModal(`
-    <h3>Masuk / Daftar</h3>
-    <div class="form-row">
-      <input id="inName" class="input" placeholder="Nama lengkap">
-      <input id="inEmail" class="input" placeholder="Email (contoh: you@domain.com)">
-      <input id="inGmail" class="input" placeholder="Alamat Gmail (untuk OTP)">
-    </div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
-      <button id="guestBtn" class="btn">Masuk Sebagai Tamu</button>
-      <button id="okBtn" class="btn primary">Masuk / Daftar</button>
-    </div>
-  `);
-  document.getElementById('okBtn').addEventListener('click', ()=>{
-    const name = document.getElementById('inName').value.trim();
-    const email = document.getElementById('inEmail').value.trim().toLowerCase();
-    const gmail = document.getElementById('inGmail').value.trim().toLowerCase();
-    if(!name || !email) return alert('Nama & email wajib diisi');
-    // show loading while creating / logging in
-    withLoading(()=> {
-      if(!users[email]) {
-        users[email] = { 
-          name, 
-          email, 
-          gmail,
-          role:(name.toLowerCase()==='admin' && email==='admin@dev.co') ? 'admin' : 'user', 
-          photo:'', 
-          phone:'', 
-          phoneVerified:false, 
-          saldo:0, 
-          history:[], 
-          security:{pin:'', a2f:false} 
-        };
-        saveUsers(users);
-      }
-      current = email; setCurrent(email); me = users[email];
-      closeModal(); renderApp(); toast('Selamat datang, '+me.name);
-    }, 900);
-  });
-  document.getElementById('guestBtn').addEventListener('click', ()=>{
-    const email = 'guest@guest.local';
-    withLoading(()=> {
-      if(!users[email]) users[email] = { 
-        name:'Tamu', 
-        email, 
-        gmail:'',
-        role:'user', 
-        photo:'', 
-        phone:'', 
-        phoneVerified:false, 
-        saldo:0, 
-        history:[], 
-        security:{} 
-      };
-      current = email; setCurrent(email); me = users[email];
-      closeModal(); renderApp(); toast('Masuk sebagai Tamu');
-    }, 900);
-  });
-}
-
 /* render */
 function renderApp(){
-  users = loadUsers(); me = users[current];
-  if(!me) return askLogin();
+  if(!current || !users[current]) {
+    showLoginPage();
+    return;
+  }
+  
+  users = loadUsers(); 
+  me = users[current];
+  
   const firstName = (me.name || '').split(' ')[0] || me.name;
-  // show admin badge if admin
   if(me.role === 'admin'){
     $('greet').innerHTML = `Hai, ${escapeHtml(firstName)} <span class="admin-badge" title="Admin">✔</span>`;
   } else {
@@ -205,7 +249,7 @@ function renderApp(){
   renderRecent();
 }
 
-/* helper to avoid XSS in innerHTML insertion of user-provided name */
+/* helper to avoid XSS */
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (m)=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
@@ -237,7 +281,7 @@ function renderRecent(){
 
 /* TopUp modal */
 function showTopUpModal(){
-  if(!me) { askLogin(); return; }
+  if(!me) { showLoginPage(); return; }
   showModal(`
     <h3>Topup Saldo</h3>
     <div class="small-muted">Saldo Anda saat ini</div>
@@ -267,7 +311,6 @@ function showTopUpModal(){
     </div>
   `);
 
-  // chip handlers
   document.querySelectorAll('#topChips .chip').forEach(c=>{
     c.addEventListener('click', ()=> {
       const val = Number(c.dataset.val);
@@ -282,7 +325,6 @@ function showTopUpModal(){
     const today = new Date().toISOString().slice(0,10);
     const todayTotal = (me.history||[]).reduce((s,h)=> (h.dateISO||'').slice(0,10)===today ? s + (h.amount||0) : s, 0);
     if(todayTotal + v > DAILY_LIMIT) return alert('Melebihi limit harian: ' + fmt(DAILY_LIMIT));
-    // show loading while creating order
     withLoading(()=> createTopupOrder(v), 900);
   });
 }
@@ -290,7 +332,7 @@ function showTopUpModal(){
 /* create order */
 function createTopupOrder(amount){
   const orderId = 'TP' + Date.now().toString().slice(-8);
-  const unique = Math.floor(Math.random()*900 + 100); // 100..999
+  const unique = Math.floor(Math.random()*900 + 100);
   const adminFee = 19;
   const totalReceived = amount + unique;
   const totalToPay = amount + adminFee + unique;
@@ -330,7 +372,12 @@ function showOrderDetail(order){
     </div>
   `);
 
-  $('orderClose').addEventListener('click', ()=> { delete me.pendingOrder; users[current]=me; saveUsers(users); closeModal(); });
+  $('orderClose').addEventListener('click', ()=> { 
+    delete me.pendingOrder; 
+    users[current]=me; 
+    saveUsers(users); 
+    closeModal(); 
+  });
 
   document.querySelectorAll('.pay-method').forEach(el=>{
     el.addEventListener('click', ()=> {
@@ -344,8 +391,6 @@ function showOrderDetail(order){
 /* QR page */
 function showQRPage(order){
   if(!order) return alert('Order tidak ditemukan.');
-  const qrjpg = `<svg xmlns='https://files.catbox.moe/vmbhiv.jpg' width='400' height='400'><rect width='100%' height='100%' fill='#fff'/><rect x='10' y='10' width='80' height='80' fill='#000'/><rect x='310' y='10' width='80' height='80' fill='#000'/><rect x='10' y='310' width='80' height='80' fill='#000'/><g transform='translate(120,80)'><rect x='0' y='0' width='8' height='8' fill='#000'/><rect x='16' y='0' width='8' height='8' fill='#000'/><rect x='0' y='16' width='8' height='8' fill='#000'/><rect x='32' y='0' width='8' height='8' fill='#000'/><rect x='48' y='16' width='8' height='8' fill='#000'/></g></svg>`;
-  const qdata = 'https://files.catbox.moe/vmbhiv.jpg,' + encodeURIComponent(qrjpg);
   const expire = new Date(Date.now() + 15*60*1000);
   showModal(`
     <h3>Kamikz Digital</h3>
@@ -373,31 +418,45 @@ function showQRPage(order){
   `);
 
   $('btnCancelOrder').addEventListener('click', ()=>{
-    delete me.pendingOrder; users[current]=me; saveUsers(users); closeModal(); toast('Order dibatalkan');
+    delete me.pendingOrder; 
+    users[current]=me; 
+    saveUsers(users); 
+    closeModal(); 
+    toast('Order dibatalkan');
   });
+  
   $('btnCheckStatus').addEventListener('click', ()=>{
     if(me.pendingOrder && me.pendingOrder.status === 'paid'){
       alert('Pembayaran telah lunas. Saldo ditambahkan.');
     } else alert('Status: Belum dibayar.');
   });
+  
   $('btnSimulatePay').addEventListener('click', ()=>{
     if(!me.pendingOrder) return alert('Order tidak ditemukan.');
-    // show loading while processing payment
     withLoading(()=> {
       me.pendingOrder.status = 'paid';
       me.history = me.history || [];
-      me.history.push({ id: uid(), dateISO: new Date().toISOString(), type: 'topup', note: 'Topup saldo ' + me.pendingOrder.id, amount: me.pendingOrder.totalReceived });
+      me.history.push({ 
+        id: uid(), 
+        dateISO: new Date().toISOString(), 
+        type: 'topup', 
+        note: 'Topup saldo ' + me.pendingOrder.id, 
+        amount: me.pendingOrder.totalReceived 
+      });
       me.saldo = Number(me.saldo || 0) + Number(me.pendingOrder.totalReceived);
       delete me.pendingOrder;
-      users[current] = me; saveUsers(users);
-      renderApp(); closeModal(); toast('Pembayaran berhasil, saldo ditambahkan');
+      users[current] = me; 
+      saveUsers(users);
+      renderApp(); 
+      closeModal(); 
+      toast('Pembayaran berhasil, saldo ditambahkan');
     }, 900);
   });
 }
 
 /* Transfer modal */
 function showTransferModal(){
-  if(!me) { askLogin(); return; }
+  if(!me) { showLoginPage(); return; }
   showModal(`
     <h3>Transfer Saldo</h3>
     <div class="form-row">
@@ -410,15 +469,17 @@ function showTransferModal(){
       </div>
     </div>
   `);
+  
   $('tCancel').addEventListener('click', closeModal);
   $('tSend').addEventListener('click', ()=>{
     const to = $('tTo').value.trim().toLowerCase();
     const amt = Number($('tAmt').value);
     const note = $('tNote').value.trim();
+    
     if(!to || !amt || amt <= 0) return alert('Isi penerima & nominal');
     if(!users[to]) return alert('Penerima tidak ditemukan.');
     if(Number(me.saldo) < amt) return alert('Saldo tidak cukup.');
-    // show loading while processing transfer
+    
     withLoading(()=> {
       me.saldo = Number(me.saldo) - amt;
       me.history = me.history || [];
@@ -451,7 +512,7 @@ function showTransferModal(){
 
 /* transactions */
 function openTransactions(){
-  if(!me) { askLogin(); return; }
+  if(!me) { showLoginPage(); return; }
   showModal(`
     <h3>Transaksi Saya</h3>
     <div style="max-height:60vh;overflow:auto;margin-top:8px">
@@ -461,22 +522,34 @@ function openTransactions(){
       <button id="closeTx" class="btn primary">Tutup</button>
     </div>
   `);
-  const listEl = $('transactionsList'); listEl.innerHTML = '';
+  
+  const listEl = $('transactionsList'); 
+  listEl.innerHTML = '';
   const list = (me.history||[]).slice().reverse();
-  if(!list.length) listEl.innerHTML = '<div class="empty">Belum ada transaksi</div>';
-  else {
+  
+  if(!list.length) {
+    listEl.innerHTML = '<div class="empty">Belum ada transaksi</div>';
+  } else {
     list.forEach(it=>{
-      const el = document.createElement('div'); el.className='recent-row';
-      el.innerHTML = `<div><div style="font-weight:700">${escapeHtml(it.note||it.type)}</div><div class="small-muted">${new Date(it.dateISO).toLocaleString()}</div></div><div style="font-weight:800">${fmt(it.amount)}</div>`;
+      const el = document.createElement('div'); 
+      el.className='recent-row';
+      el.innerHTML = `
+        <div>
+          <div style="font-weight:700">${escapeHtml(it.note||it.type)}</div>
+          <div class="small-muted">${new Date(it.dateISO).toLocaleString()}</div>
+        </div>
+        <div style="font-weight:800">${fmt(it.amount)}</div>
+      `;
       listEl.appendChild(el);
     });
   }
+  
   $('closeTx').addEventListener('click', closeModal);
 }
 
 /* profile */
 function openProfile(){
-  if(!me) { askLogin(); return; }
+  if(!me) { showLoginPage(); return; }
   showModal(`
     <h3>Profil</h3>
     <div style="text-align:center">
@@ -507,8 +580,11 @@ function openProfile(){
 
   const pfFile = $('pfFile'), pfPic = $('pfPic');
   pfFile.addEventListener('change', e=>{
-    const f = e.target.files && e.target.files[0]; if(!f) return;
-    const reader = new FileReader(); reader.onload = ev => pfPic.src = ev.target.result; reader.readAsDataURL(f);
+    const f = e.target.files && e.target.files[0]; 
+    if(!f) return;
+    const reader = new FileReader(); 
+    reader.onload = ev => pfPic.src = ev.target.result; 
+    reader.readAsDataURL(f);
   });
 
   $('pfCancel').addEventListener('click', closeModal);
@@ -516,8 +592,9 @@ function openProfile(){
     const newName = $('pfName').value.trim();
     const newGmail = $('pfGmail').value.trim().toLowerCase();
     const newPhone = $('pfPhone').value.trim();
+    
     if(!newName) return alert('Nama tidak boleh kosong');
-    // show loading while saving profile
+    
     withLoading(()=> {
       me.name = newName;
       me.gmail = newGmail;
@@ -525,81 +602,165 @@ function openProfile(){
       me.photo = pic;
       if(newPhone && newPhone !== me.phone) me.phoneVerified = false;
       me.phone = newPhone;
-      users[current] = me; saveUsers(users);
-      renderApp(); closeModal(); toast('Profil disimpan');
+      users[current] = me; 
+      saveUsers(users);
+      renderApp(); 
+      closeModal(); 
+      toast('Profil disimpan');
     }, 900);
   });
 
   $('sendOtp').addEventListener('click', async ()=>{
     const phone = $('pfPhone').value.trim();
-    if(!/^\d{6,15}$/.test(phone)) return alert('Masukkan nomor yang valid (6-15 digit tanpa +).');
+    
+    if(!/^(\+62|62|0)\d{9,12}$/.test(phone)) {
+      return alert('Format nomor tidak valid. Gunakan format 62/08');
+    }
     
     const gmail = me.gmail || me.email;
-    if(!gmail) return alert('Harap isi alamat Gmail di profil Anda');
-    
+    if(!gmail) {
+      return alert('Harap isi alamat Gmail yang valid di profil Anda');
+    }
+
+    // Generate OTP
     const code = String(Math.floor(100000 + Math.random()*900000));
-    me.otpPending = { code, phone, expires: Date.now() + 3*60*1000 };
-    users[current] = me; saveUsers(users);
+    me.otpPending = { 
+      code, 
+      phone, 
+      expires: Date.now() + 3*60*1000 // 3 menit
+    };
     
-    // Kirim OTP via email
-    const emailSubject = 'Kode Verifikasi Kamikz';
-    const emailBody = `Halo ${me.name},\n\nKode verifikasi Anda adalah: ${code}\n\nKode ini berlaku selama 3 menit.\n\nJangan bagikan kode ini kepada siapapun.`;
-    
-    const success = await sendEmail(gmail, emailSubject, emailBody);
-    
-    if (success) {
-      renderOtpArea(true);
+    try {
+      showLoading();
+      console.log('Generated OTP:', code); // For debugging
+      
+      // Kirim email
+      const emailSubject = 'Kode Verifikasi Kamikz';
+      const emailBody = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #11998e;">Kode Verifikasi Kamikz</h2>
+          <p>Halo ${me.name},</p>
+          <p>Gunakan kode berikut untuk verifikasi nomor telepon Anda:</p>
+          <div style="background: #f3fbfb; padding: 15px; text-align: center; margin: 20px 0; font-size: 24px; font-weight: bold; letter-spacing: 2px;">
+            ${code}
+          </div>
+          <p>Kode ini berlaku selama 3 menit.</p>
+          <p style="color: #ff0000;">Jangan bagikan kode ini kepada siapapun!</p>
+          <p>Terima kasih,<br>Tim Kamikz</p>
+        </div>
+      `;
+
+      const success = await sendEmail(gmail, emailSubject, emailBody);
+      
+      if (success) {
+        saveUsers(users); // Simpan OTP ke storage
+        renderOtpArea(true);
+      } else {
+        delete me.otpPending; // Hapus OTP jika gagal
+      }
+    } catch (error) {
+      console.error('OTP sending error:', error);
+      delete me.otpPending;
+      toast('Terjadi kesalahan saat mengirim OTP');
+    } finally {
+      hideLoading();
     }
   });
 }
 
-/* render OTP area inside profile modal */
+/* OTP functions */
 function renderOtpArea(show) {
   const otpArea = $('otpArea');
   if(!otpArea) return;
+  
   if (show && me && me.otpPending) {
     otpArea.innerHTML = `
-      <div class="small-muted" style="margin-top:8px">Kode OTP telah dikirim ke email Anda</div>
-      <div style="display:flex;gap:8px;margin-top:8px">
-        <input id="otpCode" class="input" placeholder="Masukkan 6 digit OTP">
-        <button id="verifyOtp" class="btn primary">Verifikasi</button>
+      <div class="otp-container">
+        <div class="small-muted">Kode OTP telah dikirim ke ${me.gmail || me.email}</div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <input id="otpCode" class="input" placeholder="6 digit OTP" maxlength="6" style="text-align:center;letter-spacing:5px">
+          <button id="verifyOtp" class="btn primary">Verifikasi</button>
+        </div>
+        <div id="otpTimer" class="small-muted" style="margin-top:8px"></div>
       </div>
     `;
-    $('verifyOtp').addEventListener('click', () => {
-      const code = $('otpCode').value.trim();
-      if(!me.otpPending) return alert('OTP tidak tersedia.');
-      if(Date.now() > me.otpPending.expires) { 
-        delete me.otpPending; 
-        users[current]=me; 
-        saveUsers(users); 
-        renderOtpArea(false); 
-        return alert('OTP kadaluarsa.'); 
-      }
-      if (code === me.otpPending.code) {
-        me.phoneVerified = true;
-        me.phone = me.otpPending.phone;
-        delete me.otpPending;
-        users[current] = me; saveUsers(users);
-        toast('Nomor telepon berhasil diverifikasi');
-        renderApp(); closeModal();
-      } else {
-        alert('OTP salah.');
-      }
-    });
+
+    // Start OTP timer
+    startOtpTimer();
+    
+    $('verifyOtp').addEventListener('click', verifyOtpHandler);
   } else {
     otpArea.innerHTML = '';
   }
 }
 
+function startOtpTimer() {
+  if (!me.otpPending) return;
+  
+  const expires = me.otpPending.expires;
+  const timerElement = $('otpTimer');
+  
+  const updateTimer = () => {
+    const now = Date.now();
+    const remaining = Math.max(0, expires - now);
+    const minutes = Math.floor(remaining / 60000);
+    const seconds = Math.floor((remaining % 60000) / 1000);
+    
+    timerElement.textContent = `Kode kadaluarsa dalam: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+    
+    if (remaining <= 0) {
+      clearInterval(timerInterval);
+      timerElement.textContent = 'Kode OTP telah kadaluarsa';
+      delete me.otpPending;
+      saveUsers(users);
+    }
+  };
+  
+  updateTimer();
+  const timerInterval = setInterval(updateTimer, 1000);
+}
+
+function verifyOtpHandler() {
+  const code = $('otpCode').value.trim();
+  
+  if (!me.otpPending) {
+    return alert('OTP tidak tersedia atau sudah kadaluarsa');
+  }
+  
+  if (code.length !== 6 || !/^\d+$/.test(code)) {
+    return alert('Masukkan 6 digit angka OTP');
+  }
+  
+  if (Date.now() > me.otpPending.expires) {
+    delete me.otpPending;
+    saveUsers(users);
+    return alert('OTP sudah kadaluarsa');
+  }
+  
+  if (code === me.otpPending.code) {
+    me.phoneVerified = true;
+    me.phone = me.otpPending.phone;
+    delete me.otpPending;
+    users[current] = me;
+    saveUsers(users);
+    
+    toast('Nomor telepon berhasil diverifikasi');
+    renderApp();
+    closeModal();
+  } else {
+    alert('Kode OTP salah. Silakan coba lagi.');
+  }
+}
+
 /* utility: ensure current user exists */
 (function ensureCurrent(){
-  if(current && users[current]) { me = users[current]; return; }
-  // else leave to askLogin on DOMContentLoaded
+  if(current && users[current]) { 
+    me = users[current]; 
+    return; 
+  }
 })();
 
-/* ---------------------------
-   Efek bintang jatuh (canvas)
-   --------------------------- */
+/* stars effect */
 (function stars(){
   const canvas = document.getElementById('bgStars');
   if(!canvas) return;
@@ -607,12 +768,15 @@ function renderOtpArea(show) {
   let w = canvas.width = window.innerWidth;
   let h = canvas.height = window.innerHeight;
   let stars = [];
+  
   function rand(min, max){ return Math.random()*(max-min)+min; }
+  
   function reset(){
     w = canvas.width = window.innerWidth;
     h = canvas.height = window.innerHeight;
     stars = [];
     const count = Math.min(180, Math.floor(w*h/6000));
+    
     for(let i=0;i<count;i++){
       stars.push({
         x: rand(0,w),
@@ -624,6 +788,7 @@ function renderOtpArea(show) {
       });
     }
   }
+  
   function draw(){
     ctx.clearRect(0,0,w,h);
     stars.forEach(s=>{
@@ -632,6 +797,7 @@ function renderOtpArea(show) {
       ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
       ctx.fillStyle = '#fff';
       ctx.fill();
+      
       // fall
       s.y += s.vy;
       // small horizontal drift
@@ -640,6 +806,7 @@ function renderOtpArea(show) {
       s.alpha += (Math.random()-0.5) * s.twinkle;
       if(s.alpha < 0.2) s.alpha = 0.2;
       if(s.alpha > 1) s.alpha = 1;
+      
       if(s.y - s.r > h) {
         s.y = -s.r;
         s.x = rand(0,w);
