@@ -1,7 +1,7 @@
 <?php
 header('Content-Type: application/json');
 $prompt = $_POST['prompt'] ?? '';
-$apiKey = 'ISI_API_KEY_GEMINI_DISINI';
+$apiKey = 'AIzaSyD4Wi5GShuzUWTD7l9eEf2koI9L3_mrtD4';
 
 $ch = curl_init('https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=' . $apiKey);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
