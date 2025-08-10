@@ -3,7 +3,7 @@ import requests
 
 app = Flask(__name__)
 
-API_KEY = "API_KEY_GEMINI_KAMU"
+API_KEY = "AIzaSyD4Wi5GShuzUWTD7l9eEf2koI9L3_mrtD4"
 
 @app.route("/ai", methods=["POST"])
 def ai_chat():
