@@ -5,7 +5,7 @@ javascript
 
 /* Initialize EmailJS */
 (function() {
-  emailjs.init('YOUR_EMAILJS_PUBLIC_KEY'); // Replace with your public key
+  emailjs.init('toe1V0T6UlCZBtw_4'); // Replace with your public key
   console.log('EmailJS initialized');
 })();
 
@@ -58,8 +58,8 @@ async function sendEmail(to, subject, body) {
     };
 
     const response = await emailjs.send(
-      'YOUR_EMAILJS_SERVICE_ID', // Replace with Service ID
-      'YOUR_EMAILJS_TEMPLATE_ID', // Replace with Template ID
+      'service_faxghxt', // Replace with Service ID
+      'template_rl1f4xs', // Replace with Template ID
       templateParams
     );
     
