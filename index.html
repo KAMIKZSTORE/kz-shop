@@ -1,124 +1,25 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Kamikz — Digital Payment</title>
-  <link rel="stylesheet" href="style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-  <script src="script.js" defer></script>
+  <title>AI Canggih — Future Chat</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <!-- Login Page -->
-  <div id="loginPage" class="login-container">
-    <div class="login-card">
-      <div class="login-header">
-        <img src="https://via.placeholder.com/80" alt="Logo" class="login-logo">
-        <h2>Selamat Datang</h2>
-        <p>Masuk untuk mengakses akun Kamikz Digital</p>
-      </div>
-      
-      <div class="login-form">
-        <div class="form-group">
-          <label for="loginEmail">Email</label>
-          <input type="email" id="loginEmail" placeholder="Masukkan email Anda">
-        </div>
-        
-        <div class="form-group">
-          <label for="loginGmail">Gmail (untuk OTP)</label>
-          <input type="email" id="loginGmail" placeholder="Masukkan Gmail Anda">
-        </div>
-        
-        <div class="form-group">
-          <label for="loginName">Nama Lengkap</label>
-          <input type="text" id="loginName" placeholder="Masukkan nama lengkap">
-        </div>
-        
-        <button id="loginBtn" class="btn-login">Masuk / Daftar</button>
-        
-        <div class="login-footer">
-          <p>Dengan melanjutkan, Anda menyetujui <a href="#">Syarat & Ketentuan</a></p>
-        </div>
-      </div>
+  <header>
+    <h1>🤖 Future AI Chat</h1>
+    <button id="logoutBtn">Logout</button>
+  </header>
+
+  <main>
+    <div class="chat-container">
+      <div id="chatOutput"></div>
+      <textarea id="userInput" placeholder="Tanya apa saja..."></textarea>
+      <button id="sendBtn">Kirim</button>
     </div>
-  </div>
+  </main>
 
-  <!-- Main App -->
-  <div id="app" class="container" style="display:none">
-    <header class="topbar">
-      <div class="brand">
-        <div class="logo">KZ</div>
-        <div>
-          <div id="greet" class="greet">Hai, Pengguna</div>
-          <div id="trxCount" class="muted">0 Trx</div>
-        </div>
-      </div>
-      <div class="profile-area">
-        <div id="balanceLabel" class="small-muted">Saldo</div>
-        <div id="balance" class="balance">Rp 0</div>
-        <div class="logout-btn" id="logoutBtn">Keluar</div>
-        <img id="hdrAvatar" class="avatar" src="" alt="avatar" title="Buka Profil">
-      </div>
-    </header>
-
-    <main>
-      <section class="card balance-card">
-        <div class="balance-top">
-          <div>
-            <div class="small-muted">Saldo Anda</div>
-            <div id="saldoMain" class="saldo-amount">Rp 0</div>
-          </div>
-          <div class="balance-actions">
-            <button id="btnTopUp" class="btn primary">Isi Saldo</button>
-            <button id="refreshBtn" class="btn ghost">Refresh</button>
-          </div>
-        </div>
-
-        <div class="quick-actions">
-          <div class="qa" id="qaTopUp"><div class="qa-ico">＋</div><div class="qa-label">Isi Saldo</div></div>
-          <div class="qa" id="qaTransfer"><div class="qa-ico">⇄</div><div class="qa-label">Transfer</div></div>
-          <div class="qa" id="qaMutasi"><div class="qa-ico">≡</div><div class="qa-label">Mutasi</div></div>
-          <div class="qa" id="qaProfile"><div class="qa-ico">👤</div><div class="qa-label">Profil</div></div>
-        </div>
-      </section>
-
-      <section class="card">
-        <h3>Isi Ulang</h3>
-        <div class="menu-grid">
-          <div class="menu-item">Internet</div>
-          <div class="menu-item">Pulsa Reguler</div>
-          <div class="menu-item">Token PLN</div>
-          <div class="menu-item">Digital</div>
-          <div class="menu-item">E-Wallet</div>
-          <div class="menu-item">Tagihan</div>
-          <div class="menu-item">Pulsa Transfer</div>
-          <div class="menu-item">Lainnya</div>
-        </div>
-      </section>
-
-      <section class="card">
-        <h3>Riwayat Terbaru</h3>
-        <div id="recentList" class="recent-list">
-          <div class="empty">Belum ada transaksi</div>
-        </div>
-      </section>
-    </main>
-  </div>
-
-  <!-- Modal wrapper -->
-  <div id="modalWrap" class="modal-wrap" aria-hidden="true">
-    <div id="modal" class="modal" role="dialog" aria-modal="true">
-      <div id="modalContent"></div>
-    </div>
-  </div>
-
-  <!-- Loading Screen -->
-  <div id="loadingScreen" aria-hidden="true">
-    <div id="loadingBox">
-      <div class="loader" aria-hidden="true"></div>
-      <div class="small-muted">Memuat...</div>
-    </div>
-  </div>
+  <script src="script.js"></script>
 </body>
 </html>
