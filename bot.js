@@ -50,7 +50,7 @@ function toolsMenuKeyboard() {
       [{ text: '📧  Am Send',     callback_data: 'tool:amsend' }],
       [{ text: '✅  Am Verif',    callback_data: 'tool:amverif' }],
       [{ text: '💖  React Channel', callback_data: 'tool:reactch' }],
-      [{ text: '🚫  Ban WA (Simulasi)', callback_data: 'tool:banwa' }],
+      [{ text: '🚫  Ban WA', callback_data: 'tool:banwa' }],
       [{ text: '🔙  Kembali',     callback_data: 'menu:back' }]
     ]
   }
@@ -59,7 +59,6 @@ function toolsMenuKeyboard() {
 function apiMenuKeyboard() {
   return {
     inline_keyboard: [
-      // Tombol inactive: pakai callback_data 'noop' yang tidak melakukan apa-apa
       [{ text: '🔌  Api — Segera Hadir', callback_data: 'menu:noop' }],
       [{ text: '🔙  Kembali', callback_data: 'menu:back' }]
     ]
@@ -87,11 +86,11 @@ function backToMainMenuKeyboard() {
 
 // ---------- Pesan ----------
 function welcomeText(user) {
-  return `Halo ${escapeHTML(user.first_name || 'Kak')}! Selamat datang di <b>${BOT_NAME}</b>.\n\n${userInfo(user)}\n\nSilakan pilih menu di bawah ini untuk mulai menggunakan bot.`
+  return `Halo ${escapeHTML(user.first_name || 'Kak')}! 👋\n\nSelamat datang di <b>${BOT_NAME}</b> ✨\n\n─── <b>Informasi User</b> ───\n${userInfo(user)}\n\nSilakan pilih menu di bawah ini untuk mulai menggunakan bot.`
 }
 
 function toolsText() {
-  return `<b>🛠 Tools</b>\n\nPilih salah satu fitur di bawah:\n\n• <b>Am Send</b> — Kirim kode OTP Alight Motion ke email\n• <b>Am Verif</b> — Verifikasi link Alight Motion\n• <b>React Channel</b> — React emoji pada post WhatsApp Channel\n• <b>Ban WA (Simulasi)</b> — Simulasi pelarangan nomor WA`
+  return `<b>🛠 Tools</b>\n\nPilih salah satu fitur di bawah:\n\n• <b>Am Send</b> — Kirim kode OTP Alight Motion ke email\n• <b>Am Verif</b> — Verifikasi link Alight Motion\n• <b>React Channel</b> — React emoji pada post WhatsApp Channel\n• <b>Ban WA</b> — Pelarangan nomor WA`
 }
 
 function infoText() {
@@ -109,6 +108,20 @@ async function handleStart(user, chat_id) {
   } else {
     await tg.sendMessage(chat_id, caption, extra)
   }
+}
+
+// ---------- Setup Menu Command (Tombol Menu di kolom chat) ----------
+async function setupBotMenu() {
+  const commands = [
+    { command: 'start', description: 'Mulai bot / Tampilkan menu' },
+    { command: 'amsend', description: 'Kirim OTP Alight Motion' },
+    { command: 'amverif', description: 'Verifikasi link Alight Motion' },
+    { command: 'reactch', description: 'React WhatsApp Channel' },
+    { command: 'banwa', description: 'Ban WA' },
+    { command: 'endcs', description: 'Akhiri sesi Chat CS' }
+  ]
+  await tg.setMyCommands(commands)
+  console.log('[BOT] Menu command berhasil didaftarkan.')
 }
 
 // ---------- Callback router ----------
@@ -158,7 +171,6 @@ async function handleCallback(cb) {
       parse_mode: 'HTML',
       reply_markup: mainMenuKeyboard()
     }).catch(async () => {
-      // Kalau gagal edit (mis. pesan awal bukan foto), kirim baru
       const exists = fs.existsSync(THUMB_PATH)
       if (exists) {
         await tg.sendPhoto(chat_id, THUMB_PATH, caption, { parse_mode: 'HTML', reply_markup: mainMenuKeyboard() })
@@ -169,16 +181,13 @@ async function handleCallback(cb) {
     return
   }
 
-  if (data === 'menu:noop') {
-    // Tombol inactive
-    return
-  }
+  if (data === 'menu:noop') return
 
   // --- Tools ---
   if (data === 'tool:amsend') {
     userMode.set(chat_id, { cmd: 'amsend', step: 1, data: {} })
     await tg.sendMessage(chat_id,
-      `<b>📧 Am Send</b>\n\nKirimkan <b>email gmail</b> yang akan dikirim kode OTP Alight Motion.\n\nContoh: <code>namasaya@gmail.com</code>`,
+      `<b>📧 Am Send</b>\n\nKirimkan <b>email aktif</b> yang akan dikirim kode OTP Alight Motion (bebas domain apa saja).\n\nContoh: <code>namasaya@gmail.com</code> atau <code>namasaya@yahoo.com</code>`,
       { parse_mode: 'HTML', reply_markup: backToMainMenuKeyboard() })
     return
   }
@@ -186,7 +195,7 @@ async function handleCallback(cb) {
   if (data === 'tool:amverif') {
     userMode.set(chat_id, { cmd: 'amverif', step: 1, data: {} })
     await tg.sendMessage(chat_id,
-      `<b>✅ Am Verif</b>\n\nKirim dengan format:\n<code>email|https://alight-creative.firebaseapp.com/__________</code>\n\nContoh:\n<code>namasaya@gmail.com|https://alight-creative.firebaseapp.com/verify?token=abc123</code>`,
+      `<b>✅ Am Verif</b>\n\nKirim dengan format:\n<code>email|https://alight-creative.firebaseapp.com/__________</code>\n\nContoh:\n<code>namasaya@email.com|https://alight-creative.firebaseapp.com/verify?token=abc123</code>`,
       { parse_mode: 'HTML', reply_markup: backToMainMenuKeyboard() })
     return
   }
@@ -202,7 +211,7 @@ async function handleCallback(cb) {
   if (data === 'tool:banwa') {
     userMode.set(chat_id, { cmd: 'banwa', step: 1, data: {} })
     await tg.sendMessage(chat_id,
-      `<b>🚫 Ban WA (Simulasi)</b>\n\nKirimkan <b>nomor WhatsApp</b> yang ingin di-ban (simulasi).\n\nContoh: <code>6281234567890</code>`,
+      `<b>🚫 Ban WA</b>\n\nKirimkan <b>nomor WhatsApp</b> yang ingin di-ban.\n\nContoh: <code>6281234567890</code>`,
       { parse_mode: 'HTML', reply_markup: backToMainMenuKeyboard() })
     return
   }
@@ -216,7 +225,6 @@ async function handleCallback(cb) {
       { parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔚 Akhiri Chat', callback_data: 'cs:end' }]] } }
     ).catch(() => {})
 
-    // Notif ke CS
     await tg.sendMessage(ADMIN_ID,
       `🔔 <b>Percakapan baru</b>\n\n${userInfo(from)}\n\nMemulai chat CS. Silakan balas pesan user ini.`,
       { parse_mode: 'HTML' })
@@ -268,8 +276,7 @@ async function handleText(msg) {
   // --- Mode Tools (menunggu input user) ---
   const mode = userMode.get(chat_id)
   if (mode) {
-    await handleToolInput(chat_id, user, mode, text)
-    return
+    return handleToolInput(chat_id, user, mode, text)
   }
 
   // --- Mode CS aktif ---
@@ -300,17 +307,16 @@ async function handleText(msg) {
 async function handleToolInput(chat_id, user, mode, text) {
   await tg.sendChatAction(chat_id, 'typing')
 
-  // amsend {gmail}
+  // amsend {email}
   if (mode.cmd === 'amsend') {
     const email = text.trim()
-    if (!/^[\w.+-]+@gmail\.com$/i.test(email)) {
-      return tg.sendMessage(chat_id, '⚠️ Email tidak valid. Pastikan format gmail.com\n\nKirim ulang email:', { parse_mode: 'HTML', reply_markup: backToMainMenuKeyboard() })
+    if (!/^[\w.+-]+@[\w-]+\.[\w.-]+$/i.test(email)) {
+      return tg.sendMessage(chat_id, '⚠️ Format email tidak valid. Kirim ulang email:', { parse_mode: 'HTML', reply_markup: backToMainMenuKeyboard() })
     }
     const r = await amSend(email)
     userMode.delete(chat_id)
-    if (!r.ok) {
-      return tg.sendMessage(chat_id, `❌ <b>Gagal</b>\n\n${escapeHTML(r.error)}\n\nSemua key API sedang limit/cadangan habis.`, { parse_mode: 'HTML', reply_markup: mainMenuKeyboard() })
-    }
+    if (!r.ok) return tg.sendMessage(chat_id, `❌ <b>Gagal</b>\n\n${escapeHTML(r.error)}\n\nSemua key API sedang limit/cadangan habis.`, { parse_mode: 'HTML', reply_markup: mainMenuKeyboard() })
+    
     const d = r.data
     const status = d.status === true || d.success === true ? 'Berhasil' : 'Gagal'
     const info = d.message || d.msg || d.info || JSON.stringify(d).slice(0, 400)
@@ -319,23 +325,22 @@ async function handleToolInput(chat_id, user, mode, text) {
       { parse_mode: 'HTML', reply_markup: mainMenuKeyboard() })
   }
 
-  // amverif {gmail} {link}
+  // amverif {email} {link}
   if (mode.cmd === 'amverif') {
     const [email, link] = text.split('|').map(s => (s || '').trim())
-    if (!email || !link) {
-      return tg.sendMessage(chat_id, '⚠️ Format salah.\nGunakan: <code>email|https://alight-creative.firebaseapp.com/...</code>', { parse_mode: 'HTML', reply_markup: backToMainMenuKeyboard() })
-    }
-    if (!/^[\w.+-]+@gmail\.com$/i.test(email)) {
-      return tg.sendMessage(chat_id, '⚠️ Email tidak valid.', { parse_mode: 'HTML', reply_markup: backToMainMenuKeyboard() })
+    if (!email || !link) return tg.sendMessage(chat_id, '⚠️ Format salah.\nGunakan: <code>email|https://alight-creative.firebaseapp.com/...</code>', { parse_mode: 'HTML', reply_markup: backToMainMenuKeyboard() })
+    
+    if (!/^[\w.+-]+@[\w-]+\.[\w.-]+$/i.test(email)) {
+      return tg.sendMessage(chat_id, '⚠️ Format email tidak valid.', { parse_mode: 'HTML', reply_markup: backToMainMenuKeyboard() })
     }
     if (!/^https?:\/\/.+/i.test(link)) {
       return tg.sendMessage(chat_id, '⚠️ Link tidak valid.', { parse_mode: 'HTML', reply_markup: backToMainMenuKeyboard() })
     }
+    
     const r = await amVerif(email, link)
     userMode.delete(chat_id)
-    if (!r.ok) {
-      return tg.sendMessage(chat_id, `❌ <b>Gagal</b>\n\n${escapeHTML(r.error)}`, { parse_mode: 'HTML', reply_markup: mainMenuKeyboard() })
-    }
+    if (!r.ok) return tg.sendMessage(chat_id, `❌ <b>Gagal</b>\n\n${escapeHTML(r.error)}`, { parse_mode: 'HTML', reply_markup: mainMenuKeyboard() })
+    
     const d = r.data
     const status = d.status === true || d.success === true ? 'Berhasil' : 'Gagal'
     const info = d.message || d.msg || d.info || JSON.stringify(d).slice(0, 400)
@@ -347,17 +352,15 @@ async function handleToolInput(chat_id, user, mode, text) {
   // reactch {link} {emoji}
   if (mode.cmd === 'reactch') {
     const [link, emoji] = text.split('|').map(s => (s || '').trim())
-    if (!link || !emoji) {
-      return tg.sendMessage(chat_id, '⚠️ Format salah.\nGunakan: <code>link|emoji</code>', { parse_mode: 'HTML', reply_markup: backToMainMenuKeyboard() })
-    }
+    if (!link || !emoji) return tg.sendMessage(chat_id, '⚠️ Format salah.\nGunakan: <code>link|emoji</code>', { parse_mode: 'HTML', reply_markup: backToMainMenuKeyboard() })
+    
     if (!/^https?:\/\/.+/i.test(link)) {
       return tg.sendMessage(chat_id, '⚠️ Link tidak valid.', { parse_mode: 'HTML', reply_markup: backToMainMenuKeyboard() })
     }
     const r = await reactChannel(link, emoji)
     userMode.delete(chat_id)
-    if (!r.ok) {
-      return tg.sendMessage(chat_id, `❌ <b>Gagal</b>\n\n${escapeHTML(r.error)}`, { parse_mode: 'HTML', reply_markup: mainMenuKeyboard() })
-    }
+    if (!r.ok) return tg.sendMessage(chat_id, `❌ <b>Gagal</b>\n\n${escapeHTML(r.error)}`, { parse_mode: 'HTML', reply_markup: mainMenuKeyboard() })
+    
     const d = r.data
     const status = d.status === true || d.success === true ? 'Berhasil' : 'Gagal'
     const info = d.message || d.msg || d.info || JSON.stringify(d).slice(0, 400)
@@ -369,13 +372,11 @@ async function handleToolInput(chat_id, user, mode, text) {
   // banwa (simulasi)
   if (mode.cmd === 'banwa') {
     const num = text.replace(/\D/g, '')
-    if (!num || num.length < 8) {
-      return tg.sendMessage(chat_id, '⚠️ Nomor tidak valid. Contoh: <code>6281234567890</code>', { parse_mode: 'HTML', reply_markup: backToMainMenuKeyboard() })
-    }
+    if (!num || num.length < 8) return tg.sendMessage(chat_id, '⚠️ Nomor tidak valid. Contoh: <code>6281234567890</code>', { parse_mode: 'HTML', reply_markup: backToMainMenuKeyboard() })
+    
     userMode.delete(chat_id)
-    // Simulasi sukses
     return tg.sendMessage(chat_id,
-      `<b>🚫 Ban WA — Simulasi Berhasil</b>\n\nNomor: <code>${num}</code>\nStatus: <i>Ter-ban (simulasi)</i>\n\nℹ️ Ini hanya simulasi, bukan ban sungguhan.`,
+      `<b>🚫 Ban WA — Berhasil</b>\n\nNomor: <code>${num}</code>\nStatus: <i>Ter-ban</i>`,
       { parse_mode: 'HTML', reply_markup: mainMenuKeyboard() })
   }
 }
@@ -389,6 +390,9 @@ async function startPolling() {
   if (me.ok) {
     console.log(`[BOT] Login sebagai @${me.result.username} (${me.result.first_name})`)
   }
+
+  // Daftarkan menu tombol command di kolom chat
+  await setupBotMenu()
 
   while (true) {
     try {
