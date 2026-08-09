@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Kaze Cloud — PT AETHER ID</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    /* ============ CUSTOM FONT: KING JACK STYLE ============ */
+    @font-face {
+      font-family: 'King Jack Style';
+      src: url('/assets/fonts/KingJackStyle.ttf') format('truetype'),
+           url('/assets/fonts/KingJackStyle.woff2') format('woff2'),
+           url('/assets/fonts/KingJackStyle.woff') format('woff');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    :root {
+      --font: 'Outfit', system-ui, -apple-system, sans-serif;
+      --display: 'Sora', system-ui, sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+      --radius: 24px; --radius-sm: 16px; --radius-lg: 32px;
+      --transition: 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+      --transition-smooth: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      
+      --bg: #030712; 
+      --surface: rgba(255, 255, 255, 0.03);
+      --surface-hover: rgba(255, 255, 255, 0.06);
+      --border: rgba(255, 255, 255, 0.06);
+      --border-strong: rgba(0, 242, 255, 0.4);
+      --text: #ffffff;
+      --text-secondary: rgba(255, 255, 255, 0.75);
+      --text-muted: rgba(255, 255, 255, 0.45);
+      
+      --primary: #00f2ff;
+      --primary-hover: #00d2ff;
+      --primary-soft: rgba(0, 242, 255, 0.08);
+      --primary-glow: rgba(0, 242, 255, 0.4);
+      
+      --success: #00ff9d;
+      --success-soft: rgba(0, 255, 157, 0.1);
+      --warning: #f59e0b;
+      --warning-soft: rgba(245, 158, 11, 0.1);
+      --danger: #ff0055;
+      --danger-soft: rgba(255, 0, 85, 0.1);
+      
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.6);
+      --glass-bg: rgba(255, 255, 255, 0.02);
+      --glass-blur: 35px;
+      
+      --safe-area-top: env(safe-area-inset-top, 0px);
+      --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html { scroll-behavior: smooth; height: 100%; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh; min-height: 100dvh;
+      line-height: 1.5;
+      overflow-x: hidden;
+      position: relative;
+      width: 100%;
+      overscroll-behavior: none;
+      letter-spacing: 0.01em;
+    }
+    
+    /* VIDEO BACKGROUND */
+    .bg-video-wrap {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; height: 100dvh;
+      z-index: 0; overflow: hidden;
+      background: linear-gradient(135deg, #030712, #001a2c, #002233, #030712);
+      background-size: 400% 400%;
+      animation: bgGradientShift 15s ease infinite;
+    }
+    @keyframes bgGradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .bg-video-wrap video {
+      width: 100%; height: 100%; object-fit: cover; opacity: 0.35; pointer-events: none;
+    }
+
+    /* OVERLAY VIGNETTE */
+    .bg-overlay {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; height: 100dvh;
+      background: radial-gradient(circle at center, transparent 0%, rgba(3, 7, 18, 0.7) 80%, rgba(3, 7, 18, 0.95) 100%);
+      z-index: 1; pointer-events: none;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; touch-action: manipulation; }
+    input { font-family: inherit; outline: none; border: none; }
+    ::selection { background: var(--primary-soft); color: var(--primary); }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 8px; }
+
+    .app { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; min-height: 100dvh; position: relative; }
+
+    /* SIDEBAR - Z-INDEX 100 */
+    .sidebar {
+      background: #05070d; 
+      border-right: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 24px 16px; padding-top: calc(24px + var(--safe-area-top));
+      position: sticky; top: 0; height: 100vh; height: 100dvh;
+      display: flex; flex-direction: column; gap: 4px;
+      transition: transform 0.3s ease; z-index: 100; box-shadow: 4px 0 32px rgba(0,0,0,0.6);
+    }
+    .sidebar::after {
+      content: ''; position: absolute; top: 0; right: 0; bottom: 0; width: 1px;
+      background: linear-gradient(180deg, transparent, rgba(0, 242, 255, 0.3), transparent);
+      pointer-events: none;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; padding: 8px 12px; margin-bottom: 16px; }
+    .brand-logo {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: linear-gradient(135deg, var(--primary), #0084ff);
+      display: grid; place-items: center;
+      font-family: var(--display); font-weight: 700; color: #000; font-size: 1.1rem;
+      box-shadow: 0 4px 12px var(--primary-glow);
+    }
+    .brand-text { font-family: var(--display); font-weight: 700; font-size: 1.1rem; letter-spacing: -0.02em; color: #fff; }
+    .brand-text span { color: var(--primary); }
+
+    .sidebar-thumb {
+      width: 100%; height: 140px; border-radius: var(--radius-sm); overflow: hidden;
+      margin-bottom: 16px; position: relative; padding: 2px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 20px rgba(0, 242, 255, 0.1);
+    }
+    .sidebar-thumb::before {
+      content: ''; position: absolute; top: 50%; left: 50%; width: 200%; height: 200%;
+      transform: translate(-50%, -50%);
+      background: conic-gradient(from 0deg, #00f2ff, #0084ff, #00ff9d, #00f2ff);
+      animation: spin-border 4s linear infinite;
+      z-index: 0;
+    }
+    .sidebar-thumb::after {
+      content: ''; position: absolute; inset: 2px; border-radius: calc(var(--radius-sm) - 2px);
+      background: linear-gradient(to top, rgba(5, 7, 13, 0.9), transparent 70%);
+      z-index: 2; pointer-events: none;
+    }
+    .sidebar-thumb img {
+      position: absolute; inset: 2px; width: calc(100% - 4px); height: calc(100% - 4px);
+      object-fit: cover; transition: transform 0.5s ease; border-radius: calc(var(--radius-sm) - 2px);
+      z-index: 1;
+    }
+    .sidebar-thumb:hover img { transform: scale(1.05); }
+
+    @keyframes spin-border {
+      0% { transform: translate(-50%, -50%) rotate(0deg); }
+      100% { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+
+    .nav-section { font-size: 0.68rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.15em; padding: 12px 12px 6px; font-family: var(--display); }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: var(--radius-sm);
+      color: var(--text-secondary); font-size: 0.9rem; font-weight: 500;
+      transition: all var(--transition-smooth); border: 1px solid transparent; position: relative;
+    }
+    .nav-item:hover { background: var(--surface-hover); color: var(--text); }
+    .nav-item.active { background: var(--primary-soft); color: var(--primary); border-color: rgba(0, 242, 255, 0.2); }
+    .nav-item.active::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 3px; height: 20px; background: var(--primary); border-radius: 0 4px 4px 0; box-shadow: 0 0 8px var(--primary-glow); }
+    .nav-icon { width: 18px; height: 18px; flex-shrink: 0; }
+    .nav-divider { height: 1px; background: var(--border); margin: 12px 4px; }
+
+    .main { display: flex; flex-direction: column; min-width: 0; position: relative; z-index: 10; }
+
+    /* TOPBAR Z-INDEX 100 */
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 32px; padding-top: calc(16px + var(--safe-area-top));
+      border-bottom: 1px solid var(--border); background: rgba(5, 7, 13, 0.9); 
+      backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%);
+      position: sticky; top: 0; z-index: 100; gap: 12px;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
+    
+    .topbar-left h1 {
+      font-family: 'King Jack Style', 'Sora', sans-serif;
+      font-size: 2rem; font-weight: normal; letter-spacing: 0.02em;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      background: linear-gradient(135deg, #ffffff 0%, #00f2ff 100%);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+      text-transform: uppercase;
+      text-shadow: 0 0 20px rgba(0, 242, 255, 0.3);
+      animation: text-flicker 4s infinite alternate;
+    }
+    @keyframes text-flicker {
+      0%, 18%, 22%, 25%, 53%, 57%, 100% { opacity: 1; text-shadow: 0 0 20px rgba(0, 242, 255, 0.4); }
+      20%, 24%, 55% { opacity: 0.8; text-shadow: 0 0 10px rgba(0, 242, 255, 0.2); }
+    }
+    
+    .topbar-left p { color: var(--text-muted); font-size: 0.85rem; margin-top: 2px; display: none; font-weight: 400; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+
+    .user-badge {
+      display: flex; align-items: center; gap: 10px; padding: 6px 14px 6px 6px;
+      border-radius: 30px; background: var(--surface); border: 1px solid var(--border);
+      transition: all var(--transition-smooth); cursor: pointer;
+    }
+    .user-badge:hover { border-color: var(--border-strong); box-shadow: 0 0 12px var(--primary-soft); }
+    .user-avatar {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), #0084ff);
+      display: grid; place-items: center; color: #000; font-weight: 700; font-size: 0.85rem;
+      font-family: var(--display);
+    }
+    .user-email { font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .content { padding: 32px; padding-bottom: calc(32px + var(--safe-area-bottom)); display: flex; flex-direction: column; gap: 24px; max-width: 880px; width: 100%; margin: 0 auto; }
+
+    /* CARD PREMIUM (GLASSMORPHISM V4) */
+    .card {
+      background: rgba(255, 255, 255, 0.02);
+      backdrop-filter: blur(35px) saturate(180%); -webkit-backdrop-filter: blur(35px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.06); border-radius: var(--radius);
+      padding: 24px; transition: all var(--transition-smooth);
+      animation: fadeInUp 0.5s ease backwards; position: relative; 
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+    .card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+      pointer-events: none;
+    }
+    .card:hover { border-color: rgba(0, 242, 255, 0.15); }
+
+    /* KARTU THUMBNAIL VIDEO (PREMIUM CYBERPUNK) */
+    .thumbnail-card {
+      padding: 0;
+      overflow: hidden;
+      height: 240px;
+      animation: float-card 6s ease-in-out infinite;
+    }
+    @keyframes float-card {
+      0%, 100% { transform: translateY(0); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); }
+      50% { transform: translateY(-8px); box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5), 0 0 30px rgba(0, 242, 255, 0.1); }
+    }
+    .video-thumbnail-wrap {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    .thumb-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      pointer-events: none;
+      filter: contrast(1.1) brightness(0.8) saturate(1.2);
+    }
+    /* Efek Scanline Bergerak */
+    .thumb-scanline {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(to bottom, transparent 50%, rgba(0, 242, 255, 0.03) 50%);
+      background-size: 100% 4px;
+      pointer-events: none;
+      z-index: 2;
+    }
+    .thumb-scanline::after {
+      content: '';
+      position: absolute;
+      top: -50%; left: 0; width: 100%; height: 50%;
+      background: linear-gradient(to bottom, transparent, rgba(0, 242, 255, 0.1), transparent);
+      animation: scan-move 4s linear infinite;
+    }
+    @keyframes scan-move {
+      0% { top: -50%; }
+      100% { top: 150%; }
+    }
+    .thumb-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(3, 7, 18, 0.95) 0%, rgba(3, 7, 18, 0.3) 50%, transparent 100%);
+      pointer-events: none;
+      z-index: 3;
+    }
+    /* Badge Teks Hologram Tanpa Background */
+    .thumb-text {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      font-family: 'King Jack Style', 'Sora', sans-serif;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      z-index: 4;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-shadow: 0 0 10px rgba(0, 242, 255, 0.8), 0 0 20px rgba(0, 242, 255, 0.4); /* Efek cahaya neon agar terbaca tanpa kotak */
+      animation: badge-pulse 2s ease-in-out infinite;
+    }
+    @keyframes badge-pulse {
+      0%, 100% {
+        text-shadow: 0 0 10px rgba(0, 242, 255, 0.8), 0 0 20px rgba(0, 242, 255, 0.4);
+      }
+      50% {
+        text-shadow: 0 0 15px rgba(0, 242, 255, 1), 0 0 30px rgba(0, 242, 255, 0.6);
+      }
+    }
+    .badge-dot {
+      width: 8px; height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--success);
+      animation: dot-blink 1s infinite;
+    }
+    @keyframes dot-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    .form-group { margin-bottom: 4px; }
+    .form-group label { display: block; font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 8px; font-family: var(--display); letter-spacing: 0.02em; }
+    .input-box {
+      display: flex; align-items: center; background: rgba(0,0,0,0.3);
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      transition: all var(--transition-smooth);
+    }
+    .input-box:focus-within { border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-soft), 0 0 20px rgba(0, 242, 255, 0.1); }
+    .input-box input { flex: 1; padding: 16px; background: transparent; color: var(--text); font-size: 16px; font-weight: 400; }
+    .input-box input::placeholder { color: var(--text-muted); }
+    .input-hint { color: var(--text-muted); font-size: 0.78rem; margin-top: 8px; }
+
+    .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; gap: 12px; }
+    .card-title { font-family: var(--display); font-size: 1rem; font-weight: 600; letter-spacing: -0.01em; display: flex; align-items: center; gap: 10px; color: #fff; }
+    .card-title svg { width: 18px; height: 18px; color: var(--primary); filter: drop-shadow(0 0 4px var(--primary-glow)); }
+
+    .slider-controls { display: flex; gap: 8px; flex-shrink: 0; }
+    .slider-btn {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: var(--surface); border: 1px solid var(--border);
+      display: grid; place-items: center; color: var(--text-secondary);
+      transition: all var(--transition-smooth);
+    }
+    .slider-btn:hover { background: var(--primary-soft); color: var(--primary); border-color: var(--primary); box-shadow: 0 0 12px var(--primary-soft); }
+
+    .slider-wrapper { position: relative; margin: 0 -4px; }
+    .slider-wrapper::after, .slider-wrapper::before {
+      content: ''; position: absolute; top: 0; bottom: 16px; width: 30px; z-index: 2; pointer-events: none;
+    }
+    .slider-wrapper::before { left: 0; background: linear-gradient(to right, rgba(3, 7, 18, 0.8), transparent); }
+    .slider-wrapper::after { right: 0; background: linear-gradient(to left, rgba(3, 7, 18, 0.8), transparent); }
+
+    .bug-slider {
+      display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory;
+      padding: 4px 4px 16px; -webkit-overflow-scrolling: touch;
+      scrollbar-width: none; -ms-overflow-style: none; width: 100%;
+    }
+    .bug-slider::-webkit-scrollbar { display: none; }
+
+    .msg-card {
+      flex: 0 0 220px; scroll-snap-align: start; position: relative; padding: 20px;
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      background: rgba(255, 255, 255, 0.03); cursor: pointer; transition: all var(--transition-smooth);
+      text-align: left; overflow: hidden; display: flex; flex-direction: column; gap: 12px;
+    }
+    .msg-card:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
+    .msg-card.selected { 
+      border-color: var(--primary); 
+      background: linear-gradient(135deg, rgba(0, 242, 255, 0.1), rgba(0, 132, 255, 0.05)); 
+      box-shadow: 0 0 0 2px var(--primary-soft), 0 0 30px var(--primary-glow); 
+    }
+    
+    .msg-icon-wrap {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: var(--primary-soft); color: var(--primary);
+      display: grid; place-items: center; transition: all var(--transition-smooth);
+    }
+    .msg-card:hover .msg-icon-wrap, .msg-card.selected .msg-icon-wrap { background: var(--primary); color: #000; box-shadow: 0 0 16px var(--primary-glow); }
+    .msg-icon-wrap svg { width: 20px; height: 20px; }
+
+    .msg-name { font-family: var(--display); font-weight: 700; font-size: 1rem; letter-spacing: -0.01em; color: #fff; }
+    .msg-desc { font-size: 0.78rem; color: var(--text-muted); line-height: 1.45; font-weight: 300; }
+    
+    .msg-card .check {
+      position: absolute; top: 16px; right: 16px; width: 22px; height: 22px;
+      border-radius: 50%; border: 2px solid var(--border-strong);
+      display: grid; place-items: center; color: transparent; transition: all var(--transition-smooth);
+    }
+    .msg-card.selected .check { background: var(--primary); border-color: var(--primary); color: #000; }
+
+    .preview-box {
+      margin-top: 18px; padding: 16px; background: rgba(0,0,0,0.3);
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      animation: fadeInUp 0.4s ease;
+    }
+    .preview-label { font-size: 0.72rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 8px; font-family: var(--display); }
+    .preview-bubble {
+      background: var(--surface); border-radius: 12px; padding: 14px;
+      white-space: pre-wrap; font-size: 0.9rem; line-height: 1.6; border: 1px solid var(--border); color: var(--text-secondary);
+    }
+    .preview-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .preview-btn { background: var(--primary-soft); border: 1px solid var(--border-strong); color: var(--primary); padding: 8px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; font-family: var(--display); }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 16px 24px; border-radius: var(--radius-sm);
+      font-family: var(--display); font-size: 0.95rem; font-weight: 600;
+      transition: all var(--transition-smooth); border: 1px solid transparent;
+      white-space: nowrap; letter-spacing: -0.01em; position: relative; overflow: hidden;
+    }
+    .btn-primary { background: linear-gradient(135deg, var(--primary), #0084ff); color: #000; box-shadow: 0 4px 14px var(--primary-glow), inset 0 1px 0 rgba(255, 255, 255, 0.3); }
+    .btn-primary::after {
+      content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+      transition: left 0.6s ease;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px var(--primary-glow); filter: brightness(1.1); }
+    .btn-primary:hover::after { left: 100%; }
+    .btn-primary:active { transform: translateY(0); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+    .btn-full { width: 100%; }
+
+    /* SEND OVERLAY */
+    .send-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      z-index: 200; display: none; align-items: center; justify-content: center;
+      animation: fadeIn 0.3s ease; padding: 20px;
+    }
+    .send-overlay.active { display: flex; }
+    .send-overlay .overlay-card {
+      background: rgba(3, 7, 18, 0.85); backdrop-filter: blur(30px) saturate(180%);
+      -webkit-backdrop-filter: blur(30px) saturate(180%);
+      border: 1px solid var(--border-strong); border-radius: var(--radius-lg);
+      padding: 40px 48px; text-align: center; box-shadow: var(--shadow-lg), 0 0 40px var(--primary-soft);
+      max-width: 340px; width: 100%; animation: popIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    
+    .spinner-wrap {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 24px;
+    }
+    .spinner-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 3px solid transparent;
+    }
+    .spinner-ring.outer {
+      width: 100%; height: 100%;
+      border-top-color: var(--primary);
+      border-right-color: var(--primary);
+      animation: spin 1.2s linear infinite;
+      box-shadow: 0 0 20px var(--primary-glow);
+    }
+    .spinner-ring.inner {
+      top: 12px; left: 12px; width: 56px; height: 56px;
+      border-bottom-color: #0084ff;
+      border-left-color: #0084ff;
+      animation: spin-reverse 1.6s linear infinite;
+      box-shadow: 0 0 15px rgba(0, 132, 255, 0.5);
+    }
+    .spinner-core {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 12px; height: 12px;
+      background: var(--primary);
+      border-radius: 50%;
+      animation: pulse-core 1s ease-in-out infinite;
+      box-shadow: 0 0 15px var(--primary);
+    }
+    @keyframes spin-reverse { to { transform: rotate(-360deg); } }
+    @keyframes pulse-core { 0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; } 50% { transform: translate(-50%, -50%) scale(1.5); opacity: 0.4; } }
+    
+    .overlay-title.loading {
+      font-family: var(--display);
+      color: var(--primary);
+      text-shadow: 0 0 10px var(--primary-glow);
+      animation: text-pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes text-pulse { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; } }
+
+    .success-circle { 
+      width: 72px; height: 72px; margin: 0 auto 20px; border-radius: 50%; 
+      background: var(--success-soft); display: grid; place-items: center; 
+      animation: popIn 0.5s cubic-bezier(0.16, 1, 0.3, 1); border: 1px solid var(--success); 
+      box-shadow: 0 0 20px rgba(0, 255, 157, 0.3);
+    }
+    .success-circle svg { width: 40px; height: 40px; color: var(--success); filter: drop-shadow(0 0 8px var(--success)); }
+    
+    .overlay-title { font-family: var(--display); font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; color: #fff; letter-spacing: -0.01em; }
+    .overlay-sub { color: var(--text-muted); font-size: 0.85rem; line-height: 1.5; }
+    .overlay-error { background: var(--danger-soft); color: var(--danger); border-radius: var(--radius-sm); padding: 12px; font-size: 0.85rem; margin-top: 16px; border: 1px solid var(--danger); }
+
+    .toast {
+      position: fixed; bottom: 24px; right: 24px; left: 24px; padding: 14px 20px;
+      background: rgba(3, 7, 18, 0.9); backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-lg); font-size: 0.875rem; font-weight: 500; z-index: 300;
+      animation: slideIn 0.3s ease; display: flex; align-items: center; gap: 10px; color: #fff;
+      max-width: calc(100vw - 48px); margin: 0 auto;
+    }
+    .toast.error { border-left: 3px solid var(--danger); color: var(--danger); }
+    .toast.success { border-left: 3px solid var(--success); color: var(--success); }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 70% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes slideIn { from { transform: translateY(120%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+    .menu-toggle { display: none; width: 44px; height: 44px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); place-items: center; color: var(--text); flex-shrink: 0; }
+    
+    .overlay {
+      position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 90; 
+      backdrop-filter: blur(16px) saturate(180%); -webkit-backdrop-filter: blur(16px) saturate(180%);
+      opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    .overlay.active { opacity: 1; visibility: visible; }
+
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { position: fixed; left: 0; top: 0; width: 280px; transform: translateX(-100%); z-index: 100; }
+      .sidebar.open { transform: translateX(0); }
+      .menu-toggle { display: grid; }
+      .user-email { display: none; }
+      .content { padding: 20px; padding-bottom: calc(20px + var(--safe-area-bottom)); }
+      .topbar { padding: 16px 20px; padding-top: calc(16px + var(--safe-area-top)); }
+      .topbar-left h1 { font-size: 1.5rem; }
+      .thumb-text { font-size: 1rem; bottom: 10px; left: 10px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- VIDEO BACKGROUND -->
+  <div class="bg-video-wrap">
+    <video id="bgVideo" src="https://files.catbox.moe/w8iutq.mp4" autoplay muted loop playsinline preload="auto"></video>
+  </div>
+  <div class="bg-overlay"></div>
+
+  <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><div class="brand-logo">K</div><div class="brand-text">Kaze<span>Cloud</span></div></div>
+      
+      <div class="sidebar-thumb">
+        <img src="https://files.catbox.moe/l777rm.png" alt="Kaze Cloud Thumbnail">
+      </div>
+
+      <div class="nav-section">Menu</div>
+      <a href="dashboard.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
+      <a href="connect.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Connect Bot</a>
+      <a href="testpesan.html" class="nav-item active"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Test Pesan</a>
+      <a href="settings.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Pengaturan</a>
+      <a href="informasi.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>Informasi</a>
+      <a href="chatcs.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Chat CS</a>
+      <div class="nav-divider"></div>
+      <div class="nav-section">Lainnya</div>
+      <a href="plans.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Paket</a>
+      <a href="profil.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profil</a>
+      <a href="logout.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Keluar</a>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Buka Menu"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+          <div>
+            <h1>PT AETHER ID</h1>
+            <p>Kirim Bug ke Target</p>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <div class="user-badge"><div class="user-avatar" id="userAvatar">U</div><span class="user-email" id="userEmail">Loading...</span></div>
+        </div>
+      </header>
+
+      <main class="content">
+        <!-- KARTU THUMBNAIL VIDEO CYBERPUNK -->
+        <div class="card thumbnail-card">
+          <div class="video-thumbnail-wrap">
+            <video class="thumb-video" src="https://files.catbox.moe/w8iutq.mp4" autoplay muted loop playsinline preload="auto"></video>
+            <div class="thumb-scanline"></div>
+            <div class="thumb-overlay"></div>
+            <div class="thumb-text">
+              <div class="badge-dot"></div>
+              KAZE CLOUD BUG
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><div class="card-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>Nomor WhatsApp Tujuan</div></div>
+          <div class="form-group">
+            <label>Nomor (format internasional)</label>
+            <div class="input-box">
+              <span style="padding-left:16px;color:var(--text-muted);font-family:var(--mono);">+</span>
+              <input type="text" id="phoneInput" placeholder="6285166637132" inputmode="numeric" autocomplete="off">
+            </div>
+            <p class="input-hint">Gunakan format internasional tanpa tanda +. Contoh: <strong>6285166637132</strong></p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="6" width="8" height="14" rx="4"/><path d="M19 7l-3 2"/><path d="M5 7l3 2"/><path d="M19 13h-3"/><path d="M5 13h3"/><path d="M19 19l-3-2"/><path d="M5 19l3-2"/><path d="M12 3v3"/></svg>
+              Pilihan Bug
+            </div>
+            <div class="slider-controls">
+              <button class="slider-btn" onclick="scrollSlider(-1)" aria-label="Geser Kiri"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+              <button class="slider-btn" onclick="scrollSlider(1)" aria-label="Geser Kanan"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></button>
+            </div>
+          </div>
+          
+          <div class="slider-wrapper">
+            <div class="bug-slider" id="bugSlider">
+              <button class="msg-card" data-fn="pesanInvis" onclick="selectMessage('pesanInvis')">
+                <span class="check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>
+                <div class="msg-icon-wrap">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
+                </div>
+                <div>
+                  <div class="msg-name">Invis</div>
+                  <div class="msg-desc">Bug invisible (viewOnce + interactive).</div>
+                </div>
+              </button>
+
+              <button class="msg-card" data-fn="pesanCrash" onclick="selectMessage('pesanCrash')">
+                <span class="check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>
+                <div class="msg-icon-wrap">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                </div>
+                <div>
+                  <div class="msg-name">Crash</div>
+                  <div class="msg-desc">Bug crash / cursor carousel.</div>
+                </div>
+              </button>
+
+              <button class="msg-card" data-fn="pesanBlank" onclick="selectMessage('pesanBlank')">
+                <span class="check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>
+                <div class="msg-icon-wrap">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>
+                </div>
+                <div>
+                  <div class="msg-name">Blank</div>
+                  <div class="msg-desc">Bug blank / blast ganda.</div>
+                </div>
+              </button>
+
+              <button class="msg-card" data-fn="pesanHard" onclick="selectMessage('pesanHard')">
+                <span class="check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>
+                <div class="msg-icon-wrap">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                </div>
+                <div>
+                  <div class="msg-name">Hard</div>
+                  <div class="msg-desc">Bug hard / rich response latex.</div>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <div class="preview-box" id="previewBox" style="display:none;">
+            <div class="preview-label">Pratinjau Bug</div>
+            <div class="preview-bubble" id="previewText"></div>
+            <div class="preview-buttons" id="previewButtons"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <button class="btn btn-primary btn-full" id="sendBtn" onclick="sendMessage()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            Kirim Pesan
+          </button>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div class="send-overlay" id="sendOverlay">
+    <div class="overlay-card">
+      <div id="overlaySending">
+        <div class="spinner-wrap">
+          <div class="spinner-ring outer"></div>
+          <div class="spinner-ring inner"></div>
+          <div class="spinner-core"></div>
+        </div>
+        <div class="overlay-title loading">Mengirim Pesan...</div>
+        <div class="overlay-sub">Mohon tunggu sebentar, pesan sedang dikirim ke nomor tujuan.</div>
+      </div>
+      <div id="overlaySuccess" style="display:none;">
+        <div class="success-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="overlay-title">Pesan Terkirim</div>
+        <div class="overlay-sub" id="overlaySuccessText">Pesan berhasil dikirim ke nomor tujuan.</div>
+      </div>
+      <div id="overlayError" style="display:none;">
+        <div class="success-circle" style="background:var(--danger-soft); border-color: var(--danger); box-shadow: 0 0 20px rgba(255,0,85,0.3);"><svg style="color:var(--danger);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
+        <div class="overlay-title">Gagal Mengirim</div>
+        <div class="overlay-sub" id="overlayErrorText">Terjadi kesalahan saat mengirim pesan.</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/firebase-config.js"></script>
+  <script src="/static/js/app.js"></script>
+  <script src="/static/js/function.js"></script>
+  <script>
+    // ============ [1] FIX VIDEO BACKGROUND AUTOPLAY ============
+    const videos = document.querySelectorAll('video');
+    function attemptPlay() {
+      videos.forEach(v => {
+        v.muted = true;
+        v.play().catch(e => {
+          console.log("Autoplay diblokir, menunggu interaksi layar pertama...", e);
+          const tryPlay = () => { v.play().catch(err => console.log(err)); };
+          document.addEventListener('click', tryPlay, { once: true });
+          document.addEventListener('touchstart', tryPlay, { once: true });
+          document.addEventListener('scroll', tryPlay, { once: true });
+        });
+      });
+    }
+    videos.forEach(v => {
+      v.addEventListener('canplay', attemptPlay);
+      v.addEventListener('canplaythrough', attemptPlay);
+      v.addEventListener('loadedmetadata', attemptPlay);
+    });
+    attemptPlay(); 
+
+    // ============ [2] STATE & SOCKET ============
+    const socket = io()
+    let currentApiKey = ''
+    let selectedFn = ''
+    let botActive = false
+
+    function updateStatusBadge(text, type) {
+      const el = document.getElementById('botStatus');
+      if (el) el.innerHTML = `<div class="status-badge ${type}"><div class="status-dot"></div> ${text}</div>`;
+    }
+
+    socket.on('bot-status', (status) => {
+      botActive = !!(status && status.connected)
+      if (botActive) updateStatusBadge('Bot Aktif', 'connected')
+      else updateStatusBadge('Bot Tidak Aktif', 'disconnected')
+    })
+    socket.on('connection-state', (state) => {
+      if (state === 'open') { botActive = true; updateStatusBadge('Bot Aktif', 'connected') }
+      else if (state === 'stopped' || state === 'disconnected') { botActive = false; updateStatusBadge('Bot Tidak Aktif', 'disconnected') }
+      else updateStatusBadge('Menghubungkan...', 'connecting')
+    })
+
+    // ============ [3] AUTH & API KEY ============
+    auth.onAuthStateChanged(async user => {
+      if (!user) return window.location.href = '/client/login.html'
+      if (!user.emailVerified) return window.location.href = '/client/login.html'
+      document.getElementById('userAvatar').textContent = user.email[0].toUpperCase()
+      document.getElementById('userEmail').textContent = user.email
+      try {
+        currentApiKey = await getOrCreateApiKey(user.uid)
+      } catch (e) { console.error('get API key error', e) }
+    })
+
+    // ============ [4] UI HELPERS & SLIDER ============
+    function toggleSidebar() { 
+      document.getElementById('sidebar').classList.toggle('open'); 
+      document.getElementById('overlay').classList.toggle('active'); 
+    }
+    
+    if (typeof toast === 'undefined') { window.toast = function(msg, type = 'info') { const t = document.createElement('div'); t.className = `toast ${type}`; t.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>${msg}`; document.body.appendChild(t); setTimeout(() => t.remove(), 3000); }; }
+
+    function scrollSlider(dir) {
+      const slider = document.getElementById('bugSlider');
+      const scrollAmount = 234;
+      slider.scrollBy({ left: dir * scrollAmount, behavior: 'smooth' });
+    }
+
+    // ============ [5] PILIH BUG ============
+    function selectMessage(fnName) {
+      selectedFn = fnName
+      document.querySelectorAll('.msg-card').forEach(c => {
+        c.classList.toggle('selected', c.dataset.fn === fnName)
+      })
+      const fn = (window.FUNCTION_MAP || {})[fnName]
+      if (!fn) return
+      showPreview(fnName)
+    }
+
+    function showPreview(fnName) {
+      const previewText = document.getElementById('previewText')
+      const previewButtons = document.getElementById('previewButtons')
+      const previewBox = document.getElementById('previewBox')
+      if (!previewBox) return
+
+      let text = '', buttons = []
+      if (fnName === 'pesanInvis') { text = 'Bug Invis\nBug invisible (viewOnce + interactive) dengan header gambar & body teks.'; buttons = ['Native Flow'] }
+      else if (fnName === 'pesanCrash') { text = 'Bug Crash\nBug cursor carousel dengan media & flow response.'; buttons = ['Carousel'] }
+      else if (fnName === 'pesanBlank') { text = 'Bug Blank\nBug blank dengan payload besar, dikirim blast 5x sekaligus.'; buttons = ['Blast'] }
+      else if (fnName === 'pesanHard') { text = 'Bug Hard\nBug hard richResponseMessage (bot forwarded + latex).'; buttons = ['Rich Response'] }
+
+      previewText.textContent = text
+      previewButtons.innerHTML = buttons.map(b => '<button class="preview-btn">' + b + '</button>').join('')
+      previewBox.style.display = 'block'
+    }
+
+    // ============ [6] KIRIM PESAN ============
+    async function sendMessage() {
+      const phone = document.getElementById('phoneInput').value.trim()
+      const btn = document.getElementById('sendBtn')
+
+      if (!phone) return toast('Isi nomor WhatsApp tujuan!', 'error')
+      if (!selectedFn) return toast('Pilih jenis bug terlebih dahulu!', 'error')
+      if (!currentApiKey) return toast('API key belum tersedia. Coba muat ulang.', 'error')
+
+      if (!botActive) {
+        updateStatusBadge('Bot Tidak Aktif', 'disconnected')
+        showErrorOverlay('Bot Anda sedang tidak aktif. Silakan connect bot di halaman Connect Bot terlebih dahulu sebelum mengirim pesan.')
+        return
+      }
+
+      const fn = (window.FUNCTION_MAP || {})[selectedFn]
+      if (typeof fn !== 'function') return toast('Fungsi bug tidak ditemukan!', 'error')
+
+      showSending()
+
+      try {
+        await fn(socket, phone)
+        showSuccess(`Pesan berhasil dikirim ke +${phone}`)
+      } catch (e) {
+        console.error('Send error:', e)
+        showErrorOverlay(e.message || 'Gagal mengirim pesan')
+      }
+    }
+
+    // ============ [7] OVERLAY ============
+    function showSending() {
+      const ov = document.getElementById('sendOverlay')
+      document.getElementById('overlaySending').style.display = 'block'
+      document.getElementById('overlaySuccess').style.display = 'none'
+      document.getElementById('overlayError').style.display = 'none'
+      ov.classList.add('active')
+    }
+    function showSuccess(msg) {
+      document.getElementById('overlaySending').style.display = 'none'
+      document.getElementById('overlaySuccess').style.display = 'block'
+      document.getElementById('overlaySuccessText').textContent = msg
+      document.getElementById('sendOverlay').classList.add('active')
+      setTimeout(closeOverlay, 2200)
+    }
+    function showErrorOverlay(msg) {
+      document.getElementById('overlaySending').style.display = 'none'
+      document.getElementById('overlayError').style.display = 'block'
+      document.getElementById('overlayErrorText').textContent = msg
+      document.getElementById('sendOverlay').classList.add('active')
+      setTimeout(closeOverlay, 3000)
+    }
+    function closeOverlay() {
+      document.getElementById('sendOverlay').classList.remove('active')
+    }
+  </script>
+</body>
+</html>
