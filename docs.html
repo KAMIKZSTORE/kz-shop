@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>API Documentation — Kaze Cloud</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+  <style>
+    /* ============ CUSTOM FONT: KING JACK STYLE ============ */
+    @font-face {
+      font-family: 'King Jack Style';
+      src: url('/assets/fonts/KingJackStyle.ttf') format('truetype'),
+           url('/assets/fonts/KingJackStyle.woff2') format('woff2'),
+           url('/assets/fonts/KingJackStyle.woff') format('woff');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    :root {
+      --font: 'Outfit', system-ui, -apple-system, sans-serif;
+      --display: 'Sora', system-ui, sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+      --radius: 20px; --radius-sm: 14px; --radius-lg: 24px;
+      --transition: 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+      --transition-smooth: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      
+      --bg: #030712; 
+      --surface: rgba(255, 255, 255, 0.03);
+      --surface-hover: rgba(255, 255, 255, 0.06);
+      --border: rgba(255, 255, 255, 0.06);
+      --border-strong: rgba(0, 242, 255, 0.4);
+      --text: #ffffff;
+      --text-secondary: rgba(255, 255, 255, 0.75);
+      --text-muted: rgba(255, 255, 255, 0.45);
+      
+      --primary: #00f2ff;
+      --primary-hover: #00d2ff;
+      --primary-soft: rgba(0, 242, 255, 0.08);
+      --primary-glow: rgba(0, 242, 255, 0.4);
+      
+      --success: #00ff9d;
+      --success-soft: rgba(0, 255, 157, 0.1);
+      --warning: #f59e0b;
+      --warning-soft: rgba(245, 158, 11, 0.1);
+      --danger: #ff0055;
+      --danger-soft: rgba(255, 0, 85, 0.1);
+      
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.6);
+      --glass-bg: rgba(255, 255, 255, 0.02);
+      --glass-blur: 30px;
+      --code-bg: #050709;
+      
+      --safe-area-top: env(safe-area-inset-top, 0px);
+      --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html { scroll-behavior: smooth; height: 100%; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh; min-height: 100dvh;
+      line-height: 1.5;
+      overflow-x: hidden;
+      position: relative;
+      width: 100%;
+      overscroll-behavior: none;
+      letter-spacing: 0.01em;
+    }
+
+    /* VIDEO BACKGROUND */
+    .bg-video-wrap {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; height: 100dvh;
+      z-index: 0; overflow: hidden;
+      background: linear-gradient(135deg, #030712, #001a2c, #002233, #030712);
+      background-size: 400% 400%;
+      animation: bgGradientShift 15s ease infinite;
+    }
+    @keyframes bgGradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .bg-video-wrap video {
+      width: 100%; height: 100%; object-fit: cover; opacity: 0.25; pointer-events: none;
+    }
+    .bg-overlay {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; height: 100dvh;
+      background: radial-gradient(circle at center, transparent 0%, rgba(3, 7, 18, 0.8) 80%, rgba(3, 7, 18, 0.95) 100%);
+      z-index: 1; pointer-events: none;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; touch-action: manipulation; }
+    input, select, textarea { font-family: inherit; outline: none; border: none; }
+    ::selection { background: var(--primary-soft); color: var(--primary); }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 8px; }
+
+    .app { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; min-height: 100dvh; position: relative; z-index: 2; }
+
+    /* SIDEBAR (Z-INDEX 100 SUPAYA TIDAK BLUR) */
+    .sidebar {
+      background: #050709; 
+      border-right: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 24px 16px; padding-top: calc(24px + var(--safe-area-top));
+      position: sticky; top: 0; height: 100vh; height: 100dvh;
+      display: flex; flex-direction: column; gap: 4px;
+      transition: transform 0.3s ease; z-index: 100; box-shadow: 4px 0 32px rgba(0,0,0,0.6);
+      overflow-y: auto;
+    }
+    .sidebar::-webkit-scrollbar { width: 0; }
+    .sidebar::after {
+      content: ''; position: absolute; top: 0; right: 0; bottom: 0; width: 1px;
+      background: linear-gradient(180deg, transparent, rgba(0, 242, 255, 0.3), transparent);
+      pointer-events: none;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; padding: 8px 12px; margin-bottom: 16px; }
+    .brand-logo {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: linear-gradient(135deg, var(--primary), #0084ff);
+      display: grid; place-items: center;
+      font-family: var(--display); font-weight: 700; color: #000; font-size: 1.1rem;
+      box-shadow: 0 4px 12px var(--primary-glow);
+    }
+    .brand-text { font-family: var(--display); font-weight: 700; font-size: 1.1rem; letter-spacing: -0.02em; color: #fff; }
+    .brand-text span { color: var(--primary); }
+
+    .nav-section { font-size: 0.68rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.15em; padding: 12px 12px 6px; font-family: var(--display); display: flex; justify-content: space-between; }
+    .nav-section span { color: var(--primary); font-weight: 700; }
+    .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: var(--radius-sm); color: var(--text-secondary); font-size: 0.9rem; font-weight: 500; transition: all var(--transition-smooth); border: 1px solid transparent; position: relative; cursor: pointer; }
+    .nav-item:hover { background: var(--surface-hover); color: var(--text); }
+    .nav-item.active { background: var(--primary-soft); color: var(--primary); border-color: rgba(0, 242, 255, 0.2); }
+    .nav-item.active::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 3px; height: 20px; background: var(--primary); border-radius: 0 4px 4px 0; box-shadow: 0 0 8px var(--primary-glow); }
+    .nav-icon { width: 18px; height: 18px; flex-shrink: 0; } 
+    .nav-divider { height: 1px; background: var(--border); margin: 12px 4px; }
+
+    /* MAIN */
+    .main { display: flex; flex-direction: column; min-width: 0; position: relative; z-index: 10; }
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 32px; padding-top: calc(16px + var(--safe-area-top));
+      border-bottom: 1px solid var(--border); background: rgba(5, 7, 9, 0.85); 
+      backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%);
+      position: sticky; top: 0; z-index: 40; gap: 12px;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
+    .topbar-left h1 {
+      font-family: 'King Jack Style', 'Sora', sans-serif;
+      font-size: 2rem; font-weight: normal; letter-spacing: 0.02em;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      background: linear-gradient(135deg, #ffffff 0%, #00f2ff 100%);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+      text-transform: uppercase;
+      text-shadow: 0 0 20px rgba(0, 242, 255, 0.3);
+    }
+    .topbar-left p { color: var(--text-muted); font-size: 0.85rem; margin-top: 2px; display: none; font-weight: 400; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
+    .user-badge { display: flex; align-items: center; gap: 10px; padding: 6px 14px 6px 6px; border-radius: 30px; background: var(--surface); border: 1px solid var(--border); transition: all var(--transition-smooth); cursor: pointer; }
+    .user-badge:hover { border-color: var(--border-strong); box-shadow: 0 0 12px var(--primary-soft); }
+    .user-avatar { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #0084ff); display: grid; place-items: center; color: #000; font-weight: 700; font-size: 0.85rem; font-family: var(--display); }
+    .user-email { font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .content { padding: 32px; padding-bottom: calc(32px + var(--safe-area-bottom)); display: flex; flex-direction: column; gap: 24px; max-width: 1000px; margin: 0 auto; width: 100%; }
+    
+    /* BOOT TERMINAL ANIMATION */
+    .boot-terminal {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-lg);
+      height: 320px;
+      display: flex;
+      flex-direction: column;
+    }
+    .terminal-header {
+      background: rgba(255, 255, 255, 0.03);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .term-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .term-dot.red { background: #ff5f56; } .term-dot.yellow { background: #ffbd2e; } .term-dot.green { background: #27c93f; }
+    .terminal-title { margin-left: 8px; color: var(--text-muted); font-size: 0.8rem; font-weight: 500; font-family: var(--mono); }
+    .terminal-body {
+      padding: 16px;
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .term-line { margin-bottom: 4px; }
+    .blink-cursor {
+      display: inline-block;
+      width: 8px;
+      height: 16px;
+      background: var(--primary);
+      vertical-align: middle;
+      animation: blink 1s steps(1) infinite;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* API LIST */
+    .card { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(35px) saturate(180%); -webkit-backdrop-filter: blur(35px) saturate(180%); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: var(--radius-lg); transition: border-color var(--transition-smooth); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); overflow: hidden; }
+    .card-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .card-title { font-family: var(--display); font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; gap: 10px; letter-spacing: -0.01em; color: #fff; }
+    
+    .endpoint-row { display: flex; align-items: center; gap: 16px; padding: 16px 24px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background var(--transition-smooth); scroll-margin-top: 100px; }
+    .endpoint-row:hover { background: var(--surface-hover); }
+    .endpoint-row:last-child { border-bottom: none; }
+    .endpoint-row.active { background: var(--surface-hover); }
+    
+    .method-badge { width: 60px; text-align: center; font-family: var(--mono); font-weight: 700; font-size: 0.75rem; padding: 6px 0; border-radius: 6px; letter-spacing: 0.05em; }
+    .method-get { background: var(--success-soft); color: var(--success); border: 1px solid rgba(0, 255, 157, 0.2); }
+    .method-post { background: var(--warning-soft); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.2); }
+    
+    .endpoint-path { font-family: var(--mono); font-size: 0.9rem; color: var(--text); flex: 1; font-weight: 500; }
+    .category-tag { font-size: 0.7rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; background: var(--primary-soft); color: var(--primary); text-transform: uppercase; letter-spacing: 0.05em; border: 1px solid rgba(0, 242, 255, 0.2); }
+    .expand-icon { color: var(--text-muted); transition: transform var(--transition-smooth); }
+    .endpoint-row.active .expand-icon { transform: rotate(180deg); color: var(--primary); }
+
+    .endpoint-content { padding: 24px; background: rgba(0, 0, 0, 0.2); display: none; }
+    .endpoint-content.active { display: block; animation: fadeIn 0.3s ease; }
+    
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* FORM ELEMENTS */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .form-group { display: flex; flex-direction: column; gap: 8px; }
+    .form-group.full-width { grid-column: 1 / -1; }
+    .form-group label { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; font-family: var(--display); }
+    .input-field, .select-field { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; color: var(--text); font-size: 0.9rem; transition: all var(--transition-smooth); }
+    .input-field:focus, .select-field:focus { border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-soft), 0 0 16px var(--primary-soft); background: var(--surface); }
+    .input-field::placeholder { color: var(--text-muted); }
+    
+    .select-wrapper { position: relative; }
+    .select-wrapper::after { content: ''; position: absolute; right: 16px; top: 50%; width: 8px; height: 8px; border-right: 2px solid var(--text-muted); border-bottom: 2px solid var(--text-muted); transform: translateY(-70%) rotate(45deg); pointer-events: none; }
+    .select-field { appearance: none; -webkit-appearance: none; cursor: pointer; padding-right: 40px; }
+
+    /* BUTTONS */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 20px; border-radius: var(--radius-sm); font-family: var(--display); font-weight: 600; font-size: 0.875rem; transition: all var(--transition-smooth); border: 1px solid transparent; }
+    .btn-primary { background: linear-gradient(135deg, var(--primary), #0084ff); color: #000; box-shadow: 0 4px 12px var(--primary-glow); }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px var(--primary-glow); filter: brightness(1.1); }
+    .btn-outline { border-color: var(--border-strong); color: var(--text); background: transparent; }
+    .btn-outline:hover { background: var(--primary-soft); border-color: var(--primary); color: var(--primary); transform: translateY(-2px); }
+    .btn-group { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 24px; }
+
+    /* TERMINAL & CODE */
+    .terminal { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; box-shadow: var(--shadow-lg); margin-top: 16px; }
+    .terminal-body.resp { padding: 16px; font-family: var(--mono); font-size: 0.85rem; color: var(--success); line-height: 1.6; white-space: pre-wrap; word-break: break-word; max-height: 300px; overflow-y: auto; }
+
+    /* TABS */
+    .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-top: 20px; margin-bottom: 16px; }
+    .tab-btn { padding: 10px 16px; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); border-bottom: 2px solid transparent; cursor: pointer; transition: all var(--transition-smooth); margin-bottom: -1px; }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+    /* TOAST */
+    .toast { position: fixed; bottom: 24px; right: 24px; left: 24px; padding: 14px 20px; background: rgba(5, 7, 9, 0.95); backdrop-filter: blur(24px) saturate(180%); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); box-shadow: var(--shadow-lg); font-size: 0.875rem; font-weight: 500; z-index: 300; animation: slideIn 0.3s ease; display: flex; align-items: center; gap: 10px; color: #fff; max-width: calc(100vw - 48px); margin: 0 auto; }
+    .toast.success { border-left: 3px solid var(--success); color: var(--success); }
+    .toast.error { border-left: 3px solid var(--danger); color: var(--danger); }
+    @keyframes slideIn { from { transform: translateY(120%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+    /* MOBILE */
+    .menu-toggle { display: none; width: 44px; height: 44px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); place-items: center; color: var(--text); flex-shrink: 0; }
+    
+    /* OVERLAY BLUR (Z-INDEX 50, DI BAWAH SIDEBAR 100) */
+    .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 50; backdrop-filter: blur(16px) saturate(180%); -webkit-backdrop-filter: blur(16px) saturate(180%); opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
+    .overlay.active { opacity: 1; visibility: visible; }
+
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { position: fixed; left: 0; top: 0; width: 280px; transform: translateX(-100%); z-index: 100; }
+      .sidebar.open { transform: translateX(0); }
+      .menu-toggle { display: grid; }
+      .user-email { display: none; }
+      .content { padding: 20px; }
+      .topbar { padding: 16px 20px; padding-top: calc(16px + var(--safe-area-top)); }
+      .topbar-left h1 { font-size: 1.5rem; }
+    }
+    @media (max-width: 600px) {
+      .form-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- VIDEO BACKGROUND -->
+  <div class="bg-video-wrap">
+    <video id="bgVideo" src="https://files.catbox.moe/w8iutq.mp4" autoplay muted loop playsinline preload="auto"></video>
+  </div>
+  <div class="bg-overlay"></div>
+
+  <div class="app">
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><div class="brand-logo">K</div><div class="brand-text">Kaze<span>Cloud</span></div></div>
+      <div class="nav-section">Menu Utama</div>
+      <a href="dashboard.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
+      <a href="connect.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Connect Bot</a>
+      <a href="testpesan.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Test Pesan</a>
+      <a href="settings.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Pengaturan</a>
+      <a href="profil.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profile</a>
+      <a href="plans.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Buy Plan</a>
+      
+      <div class="nav-divider"></div>
+      <div class="nav-section">Categories API</div>
+      <a href="docs.html" class="nav-item active"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>All Endpoints <span style="margin-left:auto;color:var(--text-muted);font-size:0.75rem;">5</span></a>
+      <a href="docs.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>AI <span style="margin-left:auto;color:var(--text-muted);font-size:0.75rem;">2</span></a>
+      <a href="docs.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Downloader <span style="margin-left:auto;color:var(--text-muted);font-size:0.75rem;">1</span></a>
+      <a href="docs.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Tools <span style="margin-left:auto;color:var(--text-muted);font-size:0.75rem;">2</span></a>
+      
+      <div class="nav-divider"></div>
+      <a href="logout.html" class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Keluar</a>
+    </aside>
+
+    <div class="main">
+      <!-- OVERLAY DIPINDAHKAN KE DALAM MAIN AGAR TIDAK NUTUP SIDEBAR -->
+      <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Buka Menu"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+          <div>
+            <h1>Docs API</h1>
+            <p>Panduan lengkap penggunaan AI Chat API Kaze Cloud</p>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <div class="user-badge"><div class="user-avatar" id="userAvatar">U</div><span class="user-email" id="userEmail">Loading...</span></div>
+        </div>
+      </header>
+
+      <main class="content">
+        <!-- BOOT TERMINAL ANIMATION -->
+        <div class="boot-terminal">
+          <div class="terminal-header">
+            <div class="term-dot red"></div>
+            <div class="term-dot yellow"></div>
+            <div class="term-dot green"></div>
+            <span class="terminal-title">kaze-cloud@server: ~/api</span>
+          </div>
+          <div class="terminal-body" id="bootTerminal"></div>
+        </div>
+
+        <!-- ENDPOINTS LIST -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">All Endpoints</div>
+<a href="profil.html" class="btn btn-outline" style="font-size:0.8rem;padding:8px 14px;">🔑 Ambil API Key</a>
+          </div>
+
+          <!-- Endpoint 1: AI Chat -->
+          <div class="endpoint-row" id="row-aichat" onclick="toggleEndpoint('aichat', this)">
+            <span class="method-badge method-get">GET</span>
+            <div class="endpoint-path">/api/ai/aichat</div>
+            <span class="category-tag">AI</span>
+            <svg class="expand-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="endpoint-content" id="content-aichat">
+            <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:20px;">Endpoint ini menerima pesan prompt dan meneruskan ke berbagai model AI premium (OpenAI GPT, Claude, Gemini, DeepSeek, Grok, Qwen, dll).</p>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label>API Key</label>
+                <input type="text" id="testApiKey" class="input-field" placeholder="Masukkan API key (kz-xxxxxxxx)">
+              </div>
+              <div class="form-group">
+                <label>Model AI</label>
+                <div class="select-wrapper">
+                  <select id="testModel" class="select-field">
+                    <option value="chatday/ai-chat">AI Chat Core (chatday/ai-chat)</option>
+                    <option value="openai/gpt-5.6-terra">OpenAI GPT 5.6 (openai/gpt-5.6-terra)</option>
+                    <option value="openai/gpt-5.5">OpenAI GPT 5.5 (openai/gpt-5.5)</option>
+                    <option value="openai/gpt-5.4">OpenAI GPT 5.4 (openai/gpt-5.4)</option>
+                    <option value="openai/gpt-5.3-chat">OpenAI GPT 5.3 (openai/gpt-5.3-chat)</option>
+                    <option value="openai/gpt-5.1-instant">OpenAI GPT 5.1 (openai/gpt-5.1-instant)</option>
+                    <option value="openai/gpt-5">OpenAI GPT 5 (openai/gpt-5)</option>
+                    <option value="openai/gpt-4o">OpenAI GPT 4o (openai/gpt-4o)</option>
+                    <option value="openai/gpt-4o-mini">OpenAI GPT 4o Mini (openai/gpt-4o-mini)</option>
+                    <option value="xai/grok-4.1-fast-non-reasoning">Grok 4.1 Fast (xai/grok-4.1-fast-non-reasoning)</option>
+                    <option value="anthropic/claude-haiku-4.5">Claude Haiku 4.5 (anthropic/claude-haiku-4.5)</option>
+                    <option value="anthropic/claude-sonnet-5">Claude Sonnet 5 (anthropic/claude-sonnet-5)</option>
+                    <option value="anthropic/claude-sonnet-4.6">Claude Sonnet 4.6 (anthropic/claude-sonnet-4.6)</option>
+                    <option value="anthropic/claude-opus-4.5">Claude Opus 4.5 (anthropic/claude-opus-4.5)</option>
+                    <option value="anthropic/claude-opus-4.6">Claude Opus 4.6 (anthropic/claude-opus-4.6)</option>
+                    <option value="anthropic/claude-opus-4.7">Claude Opus 4.7 (anthropic/claude-opus-4.7)</option>
+                    <option value="anthropic/claude-opus-4.8">Claude Opus 4.8 (anthropic/claude-opus-4.8)</option>
+                    <option value="deepseek/deepseek-v4-pro">DeepSeek V4 Pro (deepseek/deepseek-v4-pro)</option>
+                    <option value="deepseek/deepseek-v4-flash">DeepSeek V4 Flash (deepseek/deepseek-v4-flash)</option>
+                    <option value="deepseek/deepseek-v3.2-thinking">DeepSeek V3.2 Thinking (deepseek/deepseek-v3.2-thinking)</option>
+                    <option value="google/gemini-3.1-pro-preview">Gemini 3.1 Pro (google/gemini-3.1-pro-preview)</option>
+                    <option value="google/gemini-3-pro-preview">Gemini 3 Pro (google/gemini-3-pro-preview)</option>
+                    <option value="google/gemini-3.1-flash-lite">Gemini 3.1 Flash Lite (google/gemini-3.1-flash-lite)</option>
+                    <option value="alibaba/qwen3-max">Qwen 3 Max (alibaba/qwen3-max)</option>
+                    <option value="meta/llama-4-maverick">Llama 4 Maverick (meta/llama-4-maverick)</option>
+                    <option value="moonshotai/kimi-k2.6">Kimi K2.6 (moonshotai/kimi-k2.6)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Prompt / Pesan</label>
+                <input type="text" id="testPrompt" class="input-field" value="hai kamu siapa" placeholder="Masukkan pertanyaan anda...">
+              </div>
+              <div class="form-group">
+                <label>Session ID (Opsional)</label>
+                <input type="text" id="testSessionId" class="input-field" placeholder="sess_12345">
+              </div>
+            </div>
+
+            <div class="btn-group">
+              <button class="btn btn-primary" onclick="executeTest()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Execute Request
+              </button>
+              <button class="btn btn-outline" onclick="copyRequestUrl()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                Copy URL
+              </button>
+            </div>
+
+            <div style="margin-top:24px;">
+              <label style="font-size:0.8rem;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:8px;">Response Console</label>
+              <div class="terminal">
+                <div class="terminal-header">
+                  <div class="term-dot red"></div>
+                  <div class="term-dot yellow"></div>
+                  <div class="term-dot green"></div>
+                  <span class="terminal-title">response.json</span>
+                </div>
+                <div class="terminal-body resp" id="testResponse">// Klik 'Execute Request' untuk melihat respon dari AI server...</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Endpoint 2: AI Artikel -->
+          <div class="endpoint-row" id="row-artikel" onclick="toggleEndpoint('artikel', this)">
+            <span class="method-badge method-post">POST</span>
+            <div class="endpoint-path">/api/ai/artikel</div>
+            <span class="category-tag">AI</span>
+            <svg class="expand-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="endpoint-content" id="content-artikel">
+            <div style="padding:40px;text-align:center;color:var(--text-muted);">
+              <p>Endpoint ini sedang dalam pengembangan.</p>
+            </div>
+          </div>
+
+          <!-- Endpoint 3: Downloader TikTok -->
+          <div class="endpoint-row" id="row-ttdl" onclick="toggleEndpoint('ttdl', this)">
+            <span class="method-badge method-get">GET</span>
+            <div class="endpoint-path">/api/downloader/tiktok</div>
+            <span class="category-tag">Downloader</span>
+            <svg class="expand-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="endpoint-content" id="content-ttdl">
+            <div style="padding:40px;text-align:center;color:var(--text-muted);">
+              <p>Endpoint ini sedang dalam pengembangan.</p>
+            </div>
+          </div>
+
+          <!-- Endpoint 4: Am Send -->
+          <div class="endpoint-row" id="row-amsend" onclick="toggleEndpoint('amsend', this)">
+            <span class="method-badge method-get">GET</span>
+            <div class="endpoint-path">/api/am/send</div>
+            <span class="category-tag">Tools</span>
+            <svg class="expand-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="endpoint-content" id="content-amsend">
+            <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:20px;">Alat untuk mengirim kode/verifikasi ke email target menggunakan API Naxadev.</p>
+            
+            <div class="form-group full-width" style="margin-bottom: 16px;">
+              <label>Email Target</label>
+              <input type="email" id="amSendEmail" class="input-field" placeholder="Masukkan email tujuan (contoh: user@email.com)">
+            </div>
+
+            <div class="btn-group">
+              <button class="btn btn-primary" onclick="executeAmSend()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                Send Request
+              </button>
+            </div>
+
+            <div style="margin-top:24px;">
+              <label style="font-size:0.8rem;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:8px;">Response Console</label>
+              <div class="terminal">
+                <div class="terminal-header">
+                  <div class="term-dot red"></div>
+                  <div class="term-dot yellow"></div>
+                  <div class="term-dot green"></div>
+                  <span class="terminal-title">am_send_response.json</span>
+                </div>
+                <div class="terminal-body resp" id="amSendResponse">// Hasil response dari API akan muncul di sini...</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Endpoint 5: Am Verif -->
+          <div class="endpoint-row" id="row-amverif" onclick="toggleEndpoint('amverif', this)">
+            <span class="method-badge method-get">GET</span>
+            <div class="endpoint-path">/api/am/verif</div>
+            <span class="category-tag">Tools</span>
+            <svg class="expand-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="endpoint-content" id="content-amverif">
+            <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:20px;">Alat untuk memverifikasi email target menggunakan link yang diberikan.</p>
+            
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Email Target</label>
+                <input type="email" id="amVerifEmail" class="input-field" placeholder="Masukkan email tujuan">
+              </div>
+              <div class="form-group">
+                <label>Link Verifikasi</label>
+                <input type="text" id="amVerifLink" class="input-field" placeholder="https://alight-creative.firebaseapp.com/...">
+              </div>
+            </div>
+
+            <div class="btn-group">
+              <button class="btn btn-primary" onclick="executeAmVerif()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                Verify Email
+              </button>
+            </div>
+
+            <div style="margin-top:24px;">
+              <label style="font-size:0.8rem;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:8px;">Response Console</label>
+              <div class="terminal">
+                <div class="terminal-header">
+                  <div class="term-dot red"></div>
+                  <div class="term-dot yellow"></div>
+                  <div class="term-dot green"></div>
+                  <span class="terminal-title">am_verif_response.json</span>
+                </div>
+                <div class="terminal-body resp" id="amVerifResponse">// Hasil response dari API akan muncul di sini...</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="/static/js/firebase-config.js"></script>
+  <script src="/static/js/app.js"></script>
+  <script>
+    // ============ [1] FIX VIDEO BACKGROUND AUTOPLAY ============
+    const videos = document.querySelectorAll('video');
+    function attemptPlay() {
+      videos.forEach(v => {
+        v.muted = true;
+        v.play().catch(e => {
+          console.log("Autoplay diblokir, menunggu interaksi layar pertama...", e);
+          const tryPlay = () => { v.play().catch(err => console.log(err)); };
+          document.addEventListener('click', tryPlay, { once: true });
+          document.addEventListener('touchstart', tryPlay, { once: true });
+          document.addEventListener('scroll', tryPlay, { once: true });
+        });
+      });
+    }
+    videos.forEach(v => {
+      v.addEventListener('canplay', attemptPlay);
+      v.addEventListener('canplaythrough', attemptPlay);
+      v.addEventListener('loadedmetadata', attemptPlay);
+    });
+    attemptPlay(); 
+
+    // ============ BOOT TERMINAL ANIMATION ============
+    const bootSequence = [
+      { text: "> npm run dev", color: "#00f2ff", delay: 500 },
+      { text: "", color: "#a8aab5", delay: 200 },
+      { text: "> kaze-cloud@1.0.0 dev", color: "#6b6d78", delay: 200 },
+      { text: "> cross-env NODE_ENV=development node index.js", color: "#6b6d78", delay: 300 },
+      { text: "", color: "#a8aab5", delay: 300 },
+      { text: "[Kaze Cloud API] Initializing system...", color: "#a8aab5", delay: 400 },
+      { text: "[Database] Connected to Firebase Realtime DB.", color: "#00ff9d", delay: 300 },
+      { text: "[Auth] Middleware loaded successfully.", color: "#00ff9d", delay: 300 },
+      { text: "[Express] Server running on port 3000.", color: "#00ff9d", delay: 400 },
+      { text: "", color: "#a8aab5", delay: 200 },
+      { text: "[Endpoints] Registering routes...", color: "#a8aab5", delay: 400 },
+      { text: "  [GET]  /api/ai/aichat", color: "#00f2ff", delay: 150 },
+      { text: "  [POST] /api/ai/artikel", color: "#f59e0b", delay: 150 },
+      { text: "  [GET]  /api/downloader/tiktok", color: "#00f2ff", delay: 150 },
+      { text: "  [GET]  /api/am/send", color: "#00f2ff", delay: 150 },
+      { text: "  [GET]  /api/am/verif", color: "#00f2ff", delay: 150 },
+      { text: "", color: "#a8aab5", delay: 200 },
+      { text: "[System] Server ready. Waiting for requests...", color: "#00ff9d", delay: 300 }
+    ];
+
+    function runBootSequence() {
+      const terminal = document.getElementById('bootTerminal');
+      let i = 0;
+      
+      function nextLine() {
+        if (i < bootSequence.length) {
+          const lineData = bootSequence[i];
+          const lineEl = document.createElement('div');
+          lineEl.className = 'term-line';
+          lineEl.style.color = lineData.color;
+          lineEl.textContent = lineData.text;
+          terminal.appendChild(lineEl);
+          terminal.scrollTop = terminal.scrollHeight; // Auto-scroll
+          i++;
+          setTimeout(nextLine, lineData.delay);
+        } else {
+          const cursor = document.createElement('div');
+          cursor.className = 'term-line';
+          cursor.innerHTML = '<span class="blink-cursor"></span>';
+          terminal.appendChild(cursor);
+          terminal.scrollTop = terminal.scrollHeight;
+        }
+      }
+      nextLine();
+    }
+    window.addEventListener('load', runBootSequence);
+
+    // ============ UI HELPERS ============
+    function toggleSidebar() { 
+      document.getElementById('sidebar').classList.toggle('open'); 
+      document.getElementById('overlay').classList.toggle('active'); 
+    }
+    if (typeof toast === 'undefined') { 
+      window.toast = function(msg, type = 'info') { 
+        const t = document.createElement('div'); 
+        t.className = `toast ${type}`; 
+        t.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>${msg}`; 
+        document.body.appendChild(t); 
+        setTimeout(() => t.remove(), 3000); 
+      }; 
+    }
+
+    // ============ SCROLL TO ENDPOINT ============
+    function scrollToEndpoint(id) {
+      const row = document.getElementById('row-' + id);
+      if (row) {
+        toggleEndpoint(id, row);
+        setTimeout(() => {
+          row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      }
+    }
+
+    // ============ ACCORDION LOGIC ============
+    function toggleEndpoint(id, element) {
+      const content = document.getElementById('content-' + id);
+      const isActive = content.classList.contains('active');
+      
+      // Close all
+      document.querySelectorAll('.endpoint-row').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.endpoint-content').forEach(el => el.classList.remove('active'));
+      
+      // Open clicked if it was closed
+      if (!isActive) {
+        element.classList.add('active');
+        content.classList.add('active');
+      }
+    }
+
+    // ============ AUTH & API LOGIC ============
+    auth.onAuthStateChanged(async user => {
+      if (!user) return window.location.href = '/client/login.html';
+      document.getElementById('userAvatar').textContent = user.email[0].toUpperCase();
+      document.getElementById('userEmail').textContent = user.email;
+      try {
+        const userApiKey = await getOrCreateApiKey(user.uid);
+        document.getElementById('testApiKey').value = userApiKey;
+        updateCodeSnippets();
+      } catch (e) { console.error('Error fetching API key:', e); }
+    });
+
+    const codeSnippets = {
+      curl: { title: 'request.sh', code: '' },
+      node: { title: 'request.js', code: '' },
+      python: { title: 'request.py', code: '' },
+      php: { title: 'request.php', code: '' }
+    };
+
+    function showTab(name, e) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      e.target.classList.add('active');
+      document.getElementById('codeBlock').textContent = codeSnippets[name].code;
+      document.getElementById('codeTitle').textContent = codeSnippets[name].title;
+    }
+
+    function getBaseUrl() {
+      return window.location.origin + '/api/ai/aichat';
+    }
+
+    function buildRequestUrl() {
+      const key = document.getElementById('testApiKey').value.trim() || 'kz-xxxx';
+      const prompt = document.getElementById('testPrompt').value.trim() || 'hai kamu siapa';
+      const model = document.getElementById('testModel').value;
+      const sess = document.getElementById('testSessionId').value.trim();
+      let url = `${getBaseUrl()}?apikey=${encodeURIComponent(key)}&prompt=${encodeURIComponent(prompt)}&model=${encodeURIComponent(model)}`;
+      if (sess) url += `&session_id=${encodeURIComponent(sess)}`;
+      return url;
+    }
+
+    function updateCodeSnippets() {
+      const url = buildRequestUrl();
+      const key = document.getElementById('testApiKey').value.trim() || 'kz-xxxx';
+      const prompt = document.getElementById('testPrompt').value.trim() || 'hai kamu siapa';
+      const model = document.getElementById('testModel').value;
+      
+      codeSnippets.curl.code = `curl -X GET "${url}"`;
+      codeSnippets.node.code = `const axios = require('axios');\n\naxios.get('${url}')\n  .then(r => console.log(r.data))\n  .catch(e => console.error(e.message));`;
+      codeSnippets.python.code = `import requests\n\nurl = "${getBaseUrl()}"\nparams = {\n    "apikey": "${key}",\n    "prompt": "${prompt}",\n    "model": "${model}"\n}\nresponse = requests.get(url, params=params)\nprint(response.json())`;
+      codeSnippets.php.code = `<?php\n$url = "${url}";\n$response = file_get_contents($url);\n$data = json_decode($response, true);\nprint_r($data);\n?>`;
+      
+      const activeTab = document.querySelector('.tab-btn.active')?.textContent.toLowerCase().includes('curl') ? 'curl' :
+                        document.querySelector('.tab-btn.active')?.textContent.toLowerCase().includes('node') ? 'node' :
+                        document.querySelector('.tab-btn.active')?.textContent.toLowerCase().includes('python') ? 'python' : 'php';
+      if (document.getElementById('codeBlock')) {
+        document.getElementById('codeBlock').textContent = codeSnippets[activeTab].code;
+        document.getElementById('codeTitle').textContent = codeSnippets[activeTab].title;
+      }
+    }
+
+    document.getElementById('testApiKey')?.addEventListener('input', updateCodeSnippets);
+    document.getElementById('testPrompt')?.addEventListener('input', updateCodeSnippets);
+    document.getElementById('testModel')?.addEventListener('change', updateCodeSnippets);
+    document.getElementById('testSessionId')?.addEventListener('input', updateCodeSnippets);
+
+    async function executeTest() {
+      const resBox = document.getElementById('testResponse');
+      resBox.textContent = ' Executing request... Please wait...';
+      const key = document.getElementById('testApiKey').value.trim();
+      const prompt = document.getElementById('testPrompt').value.trim();
+      const model = document.getElementById('testModel').value;
+      const sess = document.getElementById('testSessionId').value.trim();
+
+      if (!key) return resBox.textContent = JSON.stringify({ status: false, error: 'Silakan isi API Key terlebih dahulu!' }, null, 2);
+      if (!prompt) return resBox.textContent = JSON.stringify({ status: false, error: 'Silakan isi Prompt pesan!' }, null, 2);
+
+      try {
+        let apiUrl = `/api/ai/aichat?apikey=${encodeURIComponent(key)}&prompt=${encodeURIComponent(prompt)}&model=${encodeURIComponent(model)}`;
+        if (sess) apiUrl += `&session_id=${encodeURIComponent(sess)}`;
+        const res = await fetch(apiUrl);
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); } catch (e) { data = { status: false, error: 'Respons API bukan JSON (kemungkinan error dari penyedia).', raw: text.slice(0, 300) }; }
+        resBox.textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        resBox.textContent = JSON.stringify({ status: false, error: err.message }, null, 2);
+      }
+    }
+
+    function copyRequestUrl() {
+      const url = buildRequestUrl();
+      navigator.clipboard.writeText(url).then(() => toast('URL request berhasil disalin!', 'success')).catch(() => toast('Gagal menyalin URL', 'error'));
+    }
+
+    // ============ TOOLS API LOGIC ============
+    async function executeAmSend() {
+      const email = document.getElementById('amSendEmail').value.trim();
+      const resBox = document.getElementById('amSendResponse');
+      
+      if (!email) {
+        toast('Email tidak boleh kosong!', 'error');
+        return resBox.textContent = JSON.stringify({ status: false, error: 'Email tidak boleh kosong!' }, null, 2);
+      }
+
+      resBox.textContent = "Executing request to Naxadev API... Please wait...";
+      
+      const url = `https://api.nexadev.my.id/am/send/?key=Kaze&email=${encodeURIComponent(email)}`;
+      
+      try {
+        const res = await fetch(url);
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); } catch (e) { data = { status: false, error: 'Respons API bukan JSON', raw: text }; }
+        resBox.textContent = JSON.stringify(data, null, 2);
+        toast('Request Am Send berhasil dieksekusi!', 'success');
+      } catch (err) {
+        resBox.textContent = JSON.stringify({ status: false, error: err.message }, null, 2);
+        toast('Gagal terhubung ke API!', 'error');
+      }
+    }
+
+    async function executeAmVerif() {
+      const email = document.getElementById('amVerifEmail').value.trim();
+      const link = document.getElementById('amVerifLink').value.trim();
+      const resBox = document.getElementById('amVerifResponse');
+      
+      if (!email || !link) {
+        toast('Email dan Link tidak boleh kosong!', 'error');
+        return resBox.textContent = JSON.stringify({ status: false, error: 'Email dan Link wajib diisi!' }, null, 2);
+      }
+
+      resBox.textContent = "Executing request to Naxadev API... Please wait...";
+      
+      const url = `https://api.nexadev.my.id/am/verif/?key=Kaze&email=${encodeURIComponent(email)}&link=${encodeURIComponent(link)}`;
+      
+      try {
+        const res = await fetch(url);
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); } catch (e) { data = { status: false, error: 'Respons API bukan JSON', raw: text }; }
+        resBox.textContent = JSON.stringify(data, null, 2);
+        toast('Request Am Verif berhasil dieksekusi!', 'success');
+      } catch (err) {
+        resBox.textContent = JSON.stringify({ status: false, error: err.message }, null, 2);
+        toast('Gagal terhubung ke API!', 'error');
+      }
+    }
+  </script>
+</body>
+</html>
