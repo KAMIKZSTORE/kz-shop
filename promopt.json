@@ -1,0 +1,1218 @@
+FULL PROMPT — USER PRIVATE MULTI-SENDER WHATSAPP API
+
+Buatkan sistem Website Utama + WA Multi-Sender API menggunakan Node.js, Express, Baileys, dan database.
+
+TUJUAN UTAMA
+
+Sistem harus memiliki konsep:
+
+USER LOGIN
+    ↓
+WEBSITE UTAMA
+    ↓
+CONNECT BOT
+    ↓
+Pilih Location
+    ↓
+PRIVATE
+    ↓
+Masukkan nomor WhatsApp
+    ↓
+Website meminta API pairing
+    ↓
+API mencari user berdasarkan authenticated user
+    ↓
+Buat sender PRIVATE khusus user tersebut
+    ↓
+Baileys pairing
+    ↓
+Session tersimpan
+    ↓
+Sender connected
+
+Setiap user mempunyai sender PRIVATE masing-masing.
+
+User A tidak boleh melihat, menggunakan, atau mengontrol sender milik User B.
+
+---
+
+1. STACK
+
+Backend:
+
+- Node.js
+- Express.js
+- Baileys
+- SQLite
+- better-sqlite3
+- dotenv
+- cors
+- express-rate-limit
+- JWT atau session authentication
+
+Frontend:
+
+- HTML
+- CSS
+- Vanilla JavaScript
+
+Gunakan ES Module:
+
+"type": "module"
+
+---
+
+2. STRUKTUR PROJECT
+
+Buat:
+
+project/
+│
+├── index.js
+├── database.js
+├── auth.js
+├── func.js
+├── package.json
+├── .env
+├── .env.example
+├── README.md
+│
+├── database/
+│   └── database.db
+│
+├── sessions/
+│   ├── user_1/
+│   │   └── 628123456789/
+│   │       └── ...
+│   │
+│   └── user_2/
+│       └── 628987654321/
+│           └── ...
+│
+└── public/
+    ├── index.html
+    ├── login.html
+    ├── dashboard.html
+    ├── style.css
+    └── app.js
+
+Folder berikut harus otomatis dibuat:
+
+database/
+sessions/
+
+---
+
+3. USER SYSTEM
+
+Database mempunyai tabel:
+
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+Password wajib disimpan menggunakan hashing yang aman.
+
+Jangan menyimpan password plaintext.
+
+---
+
+4. SENDERS DATABASE
+
+Buat tabel:
+
+CREATE TABLE IF NOT EXISTS senders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    user_id INTEGER NOT NULL,
+
+    number TEXT NOT NULL,
+
+    location TEXT NOT NULL DEFAULT 'private',
+
+    status TEXT NOT NULL DEFAULT 'disconnected',
+
+    session_path TEXT NOT NULL,
+
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    UNIQUE(user_id, number),
+
+    FOREIGN KEY(user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+);
+
+Location hanya:
+
+private
+global
+
+Status:
+
+connecting
+connected
+disconnected
+logged_out
+failed
+
+---
+
+5. PRIVATE SENDER
+
+Jika user login:
+
+User ID = 15
+
+kemudian user memasukkan:
+
+628123456789
+
+maka database:
+
+user_id = 15
+number = 628123456789
+location = private
+
+dan session:
+
+sessions/
+└── user_15/
+    └── 628123456789/
+
+User lain:
+
+User ID = 20
+
+tidak boleh mengakses:
+
+user_15/
+
+---
+
+6. AUTHENTICATION
+
+Jangan percaya "user_id" dari frontend.
+
+Contoh request:
+
+{
+    "user_id": 15,
+    "number": "628123456789"
+}
+
+JANGAN menggunakan "user_id" dari body sebagai sumber kebenaran.
+
+Identitas user harus diambil dari:
+
+JWT
+
+atau:
+
+server-side session
+
+Contoh:
+
+Authorization: Bearer <JWT>
+
+Backend melakukan:
+
+JWT
+ ↓
+verify
+ ↓
+user_id
+ ↓
+gunakan user_id hasil authentication
+
+Frontend tidak boleh bisa mengganti:
+
+user_id = 15
+
+menjadi:
+
+user_id = 16
+
+untuk mengambil sender orang lain.
+
+---
+
+7. LOGIN
+
+Buat:
+
+POST /api/v1/auth/register
+
+Body:
+
+{
+    "username": "andika",
+    "email": "user@example.com",
+    "password": "password"
+}
+
+Login:
+
+POST /api/v1/auth/login
+
+Body:
+
+{
+    "email": "user@example.com",
+    "password": "password"
+}
+
+Response:
+
+{
+    "success": true,
+    "token": "JWT_TOKEN",
+    "user": {
+        "id": 15,
+        "username": "andika",
+        "email": "user@example.com"
+    }
+}
+
+---
+
+8. CONNECT BOT
+
+Frontend dashboard memiliki tombol:
+
+CONNECT BOT
+
+Ketika ditekan tampil modal:
+
+Connect WhatsApp
+
+Location:
+
+(•) Private
+( ) Global
+
+WhatsApp Number:
+
+[ +62xxxxxxxxxxx ]
+
+[ CONNECT ]
+
+Untuk mode PRIVATE, request:
+
+POST /api/v1/bot-pairing
+Authorization: Bearer JWT_TOKEN
+Content-Type: application/json
+
+Body:
+
+{
+    "number": "628123456789",
+    "location": "private"
+}
+
+Backend mendapatkan:
+
+user_id
+
+dari JWT.
+
+---
+
+9. PRIVATE PAIRING FLOW
+
+Alur lengkap:
+
+User login
+     ↓
+Dashboard
+     ↓
+Connect Bot
+     ↓
+Private
+     ↓
+Input nomor
+     ↓
+POST /api/v1/bot-pairing
+     ↓
+verify JWT
+     ↓
+get authenticated user_id
+     ↓
+normalize number
+     ↓
+cek sender user tersebut
+     ↓
+buat database sender
+     ↓
+buat sessions/user_<id>/<number>
+     ↓
+start Baileys
+     ↓
+generate pairing code
+     ↓
+return pairing code
+
+Response:
+
+{
+    "success": true,
+    "number": "628123456789",
+    "location": "private",
+    "pairingCode": "ABCD1234",
+    "status": "connecting"
+}
+
+Pairing code jangan disimpan permanen di database.
+
+---
+
+10. BAILEYS SESSION
+
+Setiap user/sender harus memiliki authentication state terpisah.
+
+Contoh:
+
+sessions/
+├── user_15/
+│   ├── 628123456789/
+│   └── 628555555555/
+│
+└── user_20/
+    └── 628987654321/
+
+Jangan menggunakan satu folder session untuk semua sender.
+
+Gunakan:
+
+useMultiFileAuthState()
+
+dengan path:
+
+sessions/user_<userId>/<number>
+
+---
+
+11. MULTI SESSION MEMORY
+
+Gunakan:
+
+const sessions = new Map();
+
+Gunakan key:
+
+userId:number
+
+Contoh:
+
+15:628123456789
+20:628987654321
+
+Dengan begitu nomor yang sama secara konsep tetap dapat dibedakan berdasarkan user.
+
+Jangan membuat koneksi duplicate untuk:
+
+15:628123456789
+
+---
+
+12. CONNECTION STATUS
+
+Handle "connection.update".
+
+Jika:
+
+open
+
+update database:
+
+connected
+
+Jika:
+
+connecting
+
+update:
+
+connecting
+
+Jika disconnected:
+
+disconnected
+
+Jika logout:
+
+logged_out
+
+Jika error:
+
+failed
+
+Dashboard harus menampilkan status secara real-time/polling.
+
+---
+
+13. AUTO RECONNECT
+
+Ketika server restart:
+
+database
+ ↓
+ambil sender
+ ↓
+cek session_path
+ ↓
+jika session ada
+ ↓
+reconnect Baileys
+
+Sender yang masih valid harus otomatis reconnect.
+
+Gunakan reconnect delay/backoff.
+
+Contoh:
+
+2 sec
+5 sec
+10 sec
+30 sec
+
+Jangan melakukan reconnect tanpa batas dengan interval sangat pendek.
+
+Sender yang "logged_out" tidak boleh otomatis reconnect.
+
+---
+
+14. GET MY SENDERS
+
+Endpoint:
+
+GET /api/v1/my-senders
+Authorization: Bearer JWT_TOKEN
+
+Backend:
+
+SELECT *
+FROM senders
+WHERE user_id = authenticatedUserId;
+
+Response:
+
+{
+    "success": true,
+    "senders": [
+        {
+            "id": 1,
+            "number": "628123456789",
+            "location": "private",
+            "status": "connected"
+        }
+    ]
+}
+
+WAJIB menggunakan authenticated user ID.
+
+Jangan menerima:
+
+?user_id=...
+
+untuk menentukan pemilik sender.
+
+---
+
+15. GET SENDER STATUS
+
+Endpoint:
+
+GET /api/v1/sender/:number/status
+Authorization: Bearer JWT_TOKEN
+
+Backend wajib mencari:
+
+user_id = authenticated user
+number = :number
+
+Bukan hanya:
+
+number = :number
+
+Jika sender bukan milik user:
+
+403 Forbidden
+
+Response:
+
+{
+    "success": false,
+    "message": "You do not own this sender"
+}
+
+---
+
+16. SEND MESSAGE
+
+Endpoint:
+
+POST /api/v1/send-message
+Authorization: Bearer JWT_TOKEN
+Content-Type: application/json
+
+Body:
+
+{
+    "target": "628111111111",
+    "sender": "628123456789",
+    "jenis": "text",
+    "message": "Halo!"
+}
+
+Alur:
+
+JWT
+ ↓
+authenticated user_id
+ ↓
+sender dari request
+ ↓
+database
+ ↓
+WHERE user_id = authenticatedUserId
+AND number = sender
+ ↓
+cek ownership
+ ↓
+cek status
+ ↓
+ambil socket
+ ↓
+func.js
+ ↓
+send message
+
+Jika sender milik user lain:
+
+403 Forbidden
+
+---
+
+17. JENIS PESAN
+
+Hanya gunakan jenis pesan normal:
+
+text
+image
+video
+audio
+document
+
+Jangan membuat:
+
+bug
+crash
+flood
+spam
+payload attack
+void attack
+delay attack
+
+atau fungsi yang bertujuan mengganggu WhatsApp/perangkat/akun target.
+
+---
+
+18. FUNC.JS
+
+Buat:
+
+export async function sendText(sock, target, message) {}
+
+export async function sendImage(sock, target, url, caption) {}
+
+export async function sendVideo(sock, target, url, caption) {}
+
+export async function sendAudio(sock, target, url) {}
+
+export async function sendDocument(sock, target, url, filename) {}
+
+Semua fungsi harus menggunakan API resmi Baileys yang sesuai.
+
+---
+
+19. LOGOUT
+
+Endpoint:
+
+POST /api/v1/sender/:number/logout
+Authorization: Bearer JWT_TOKEN
+
+Backend wajib:
+
+authenticated user
+ ↓
+cari sender WHERE user_id = currentUser
+ ↓
+logout
+ ↓
+hapus socket dari Map
+ ↓
+update status
+
+User tidak boleh logout sender milik user lain.
+
+Optional body:
+
+{
+    "deleteSession": true
+}
+
+Jika true:
+
+sessions/user_<id>/<number>
+
+dihapus.
+
+Jika false:
+
+session tetap disimpan.
+
+---
+
+20. GLOBAL SENDER
+
+Sistem juga harus mendukung:
+
+location = global
+
+Tetapi GLOBAL berbeda dengan PRIVATE.
+
+PRIVATE:
+
+hanya pemilik sender
+
+GLOBAL:
+
+hanya dapat digunakan jika user mempunyai permission
+
+Tambahkan field:
+
+role
+
+pada user:
+
+user
+admin
+
+Contoh:
+
+PRIVATE
+User A → sender A
+
+GLOBAL
+Admin → dapat mengelola sender global
+User biasa → tidak dapat menggunakan sender global kecuali diberi permission
+
+Jangan membuat global sender otomatis dapat dipakai semua user tanpa authorization.
+
+---
+
+21. API ADMIN
+
+Buat endpoint:
+
+GET /api/v1/admin/senders
+
+Hanya admin.
+
+Admin dapat melihat:
+
+user
+number
+location
+status
+created_at
+
+Admin dapat:
+
+disconnect
+logout
+delete sender
+
+Tetapi jangan pernah mengembalikan authentication credentials/session state.
+
+---
+
+22. SECURITY
+
+Gunakan:
+
+Helmet
+CORS
+Rate Limit
+JWT
+Password Hash
+Input Validation
+
+Validasi:
+
+number
+location
+target
+jenis
+message
+
+Jangan expose:
+
+API_SECRET
+JWT_SECRET
+Baileys auth state
+password
+pairing code permanen
+
+Gunakan ".env":
+
+PORT=3000
+JWT_SECRET=CHANGE_ME
+API_KEY=CHANGE_ME
+DATABASE_PATH=./database/database.db
+SESSION_PATH=./sessions
+
+---
+
+23. RATE LIMIT
+
+Buat rate limit terpisah untuk:
+
+/auth/login
+/auth/register
+/bot-pairing
+/send-message
+
+Contoh:
+
+login → 10 request / 15 menit
+register → 5 request / jam
+pairing → 5 request / 15 menit
+send-message → rate limit sesuai kebutuhan
+
+Jangan membuat endpoint yang dapat digunakan untuk spam massal.
+
+---
+
+24. FRONTEND DASHBOARD
+
+Buat UI modern:
+
+Dark
+Cyber
+Futuristic
+Responsive
+Mobile friendly
+
+Dashboard:
+
+┌───────────────────────────────────┐
+│ WA MULTI SENDER                   │
+│                                   │
+│ Total Sender       3              │
+│ Connected          2              │
+│ Connecting         1              │
+│                                   │
+│ [ + CONNECT BOT ]                 │
+└───────────────────────────────────┘
+
+---
+
+25. PRIVATE BOT CONNECT UI
+
+Ketika klik:
+
+CONNECT BOT
+
+modal:
+
+Connect WhatsApp
+
+Location
+
+[ PRIVATE ]
+
+WhatsApp Number
+
+[ +62xxxxxxxxxxx ]
+
+[ CONNECT ]
+
+Jika API berhasil:
+
+Pairing Code
+
+ABCD1234
+
+Masukkan kode tersebut ke WhatsApp.
+
+Status:
+CONNECTING
+
+Setelah connected:
+
+CONNECTED
+
+---
+
+26. SENDER TABLE
+
+Tampilkan hanya sender milik user login.
+
+My WhatsApp Senders
+
+NUMBER          LOCATION     STATUS       ACTION
+
+628123456789    PRIVATE      CONNECTED    LOGOUT
+628555555555    PRIVATE      CONNECTING   -
+
+Data diambil dari:
+
+GET /api/v1/my-senders
+
+---
+
+27. SEND MESSAGE UI
+
+Dropdown sender harus hanya berisi sender milik user.
+
+Send Message
+
+Sender
+[ 628123456789 ▼ ]
+
+Target
+[ 628xxxxxxxxxx ]
+
+Jenis
+[ Text ▼ ]
+
+Message
+[.........................]
+
+[ SEND ]
+
+Frontend tidak boleh mengizinkan user memilih sender milik user lain.
+
+Tetapi backend tetap harus melakukan authorization check karena frontend tidak boleh dipercaya.
+
+---
+
+28. API FLOW LENGKAP
+
+Register
+
+POST /api/v1/auth/register
+
+Login
+
+POST /api/v1/auth/login
+
+Connect private sender
+
+POST /api/v1/bot-pairing
+
+Body:
+
+{
+    "number": "628123456789",
+    "location": "private"
+}
+
+List sender user
+
+GET /api/v1/my-senders
+
+Sender status
+
+GET /api/v1/sender/:number/status
+
+Send message
+
+POST /api/v1/send-message
+
+Logout
+
+POST /api/v1/sender/:number/logout
+
+---
+
+29. OWNERSHIP RULE
+
+Ini bagian yang sangat penting.
+
+Setiap query sender harus mempunyai:
+
+WHERE user_id = ?
+
+Contoh:
+
+SELECT *
+FROM senders
+WHERE user_id = ?
+AND number = ?
+
+Jangan:
+
+SELECT *
+FROM senders
+WHERE number = ?
+
+Karena itu dapat menyebabkan user mengakses sender milik user lain.
+
+---
+
+30. CONTOH
+
+User A:
+
+id = 10
+
+connect:
+
+628111111111
+
+Database:
+
+user_id = 10
+number = 628111111111
+location = private
+status = connected
+
+Session:
+
+sessions/user_10/628111111111/
+
+User B:
+
+id = 20
+
+connect:
+
+628222222222
+
+Session:
+
+sessions/user_20/628222222222/
+
+User B mencoba:
+
+{
+    "sender": "628111111111",
+    "target": "628999999999",
+    "jenis": "text",
+    "message": "Hello"
+}
+
+Backend harus menolak:
+
+{
+    "success": false,
+    "message": "Sender does not belong to this user"
+}
+
+HTTP:
+
+403
+
+---
+
+31. API RESPONSE FORMAT
+
+Success:
+
+{
+    "success": true,
+    "status": "success",
+    "data": {}
+}
+
+Error:
+
+{
+    "success": false,
+    "status": "failed",
+    "message": "Error message"
+}
+
+Gunakan HTTP status yang benar:
+
+200 success
+201 created
+400 bad request
+401 unauthorized
+403 forbidden
+404 not found
+409 conflict
+429 rate limited
+500 server error
+
+Jangan mengirim stack trace ke client.
+
+---
+
+32. AUTO SESSION RECOVERY
+
+Saat server start:
+
+START SERVER
+     ↓
+LOAD DATABASE
+     ↓
+LOAD SENDERS
+     ↓
+FOR EACH SENDER
+     ↓
+CHECK session_path
+     ↓
+START BAILEYS
+     ↓
+UPDATE STATUS
+
+Jika:
+
+status = logged_out
+
+jangan reconnect.
+
+Jika:
+
+status = connected/disconnected
+
+dan session masih valid, coba reconnect.
+
+---
+
+33. GRACEFUL SHUTDOWN
+
+Handle:
+
+process.on("SIGINT", ...)
+process.on("SIGTERM", ...)
+
+Sebelum shutdown:
+
+stop HTTP server
+close database
+close Baileys connections
+
+Jangan menghapus session saat shutdown.
+
+---
+
+34. CORS
+
+Configure CORS menggunakan environment:
+
+FRONTEND_URL=http://localhost:3000
+
+Jangan gunakan:
+
+Access-Control-Allow-Origin: *
+
+untuk production.
+
+---
+
+35. README
+
+README harus menjelaskan:
+
+1. Install Node.js
+2. npm install
+3. setup .env
+4. npm start
+5. buka dashboard
+6. register
+7. login
+8. Connect Bot
+9. pilih Private
+10. masukkan nomor
+11. masukkan pairing code di WhatsApp
+12. sender menjadi Connected
+
+Jelaskan struktur:
+
+users
+senders
+sessions
+
+dan ownership system.
+
+---
+
+36. PACKAGE.JSON
+
+Gunakan:
+
+{
+    "name": "wa-multi-sender-api",
+    "version": "1.0.0",
+    "type": "module",
+    "scripts": {
+        "start": "node index.js",
+        "dev": "node --watch index.js"
+    }
+}
+
+Gunakan dependency yang kompatibel dengan versi Node.js yang dipilih.
+
+---
+
+37. HASIL AKHIR
+
+Saya ingin source code FULL, bukan pseudocode.
+
+Berikan:
+
+package.json
+index.js
+database.js
+auth.js
+func.js
+.env.example
+public/index.html
+public/login.html
+public/dashboard.html
+public/style.css
+public/app.js
+README.md
+
+Semua kode harus saling terhubung.
+
+Pastikan:
+
+npm install
+npm start
+
+dapat menjalankan backend.
+
+Pastikan database dibuat otomatis.
+
+Pastikan folder session dibuat otomatis.
+
+Pastikan multi-user dan multi-sender berjalan secara independen.
+
+Paling penting:
+
+USER LOGIN
+      ↓
+AUTHENTICATED USER ID
+      ↓
+PRIVATE SENDER
+      ↓
+DATABASE OWNERSHIP
+      ↓
+BAILEYS SESSION
+      ↓
+SEND MESSAGE
+
+Tidak boleh ada cara bagi user biasa untuk mengakses sender milik user lain hanya dengan mengganti nomor sender atau parameter request.
